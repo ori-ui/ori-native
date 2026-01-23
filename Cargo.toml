@@ -1,0 +1,29 @@
+[package]
+name = "ori-native"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[workspace]
+members = [
+  "ori-native-core",
+  "ori-native-wry",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Ori Developers"]
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+ori-native-core = { path = "ori-native-core" }
+ori-native-wry  = { path = "ori-native-wry"  }
+
+ori = { git = "https://github.com/ori-ui/ori" }
+
+[dependencies]
+ori-native-core = { workspace = true }
+ori-native-wry  = { workspace = true }
+ori = { workspace = true }
