@@ -5,7 +5,7 @@ use gtk4::{
 use ori::{AnyState, AnyView, Message, Proxy, View};
 use ori_native_core::{BoxedEffect, Context};
 
-use crate::Gtk4Platform;
+use crate::Platform;
 
 pub struct Application {}
 
@@ -20,13 +20,14 @@ impl Application {
         Self {}
     }
 
-    pub fn run<T>(self, data: &mut T, ui: impl FnMut(&T) -> BoxedEffect<Gtk4Platform, T>) {
+    pub fn run<T>(self, data: &mut T, ui: impl FnMut(&T) -> BoxedEffect<Platform, T>) {
         gtk4::init().unwrap();
 
         let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
 
         let app = gtk4::Application::default();
-        let platform = Gtk4Platform::new(sender.clone(), app.clone());
+        let display = gdk4::Display::default().unwrap();
+        let platform = Platform::new(sender.clone(), display, app.clone());
         let mut state = State {
             data,
             build: ui,
@@ -65,14 +66,14 @@ pub(crate) enum Event {
 struct State<'a, T, B> {
     data:    &'a mut T,
     build:   B,
-    state:   Option<AnyState<Context<Gtk4Platform>, T, ()>>,
-    context: Context<Gtk4Platform>,
+    state:   Option<AnyState<Context<Platform>, T, ()>>,
+    context: Context<Platform>,
     running: bool,
 }
 
 impl<T, B> State<'_, T, B>
 where
-    B: FnMut(&T) -> BoxedEffect<Gtk4Platform, T>,
+    B: FnMut(&T) -> BoxedEffect<Platform, T>,
 {
     fn handle_event(&mut self, event: Event) {
         match event {

@@ -1,7 +1,9 @@
 mod flex;
+mod pressable;
 mod text;
 mod window;
 
-pub use flex::{Flex, flex_column, flex_row};
+pub use flex::{Flex, column, row};
+pub use pressable::{PressState, Pressable, pressable};
 pub use text::{Text, text};
-pub use window::{Window, window};
+pub use window::{Window, WindowMessage, window};

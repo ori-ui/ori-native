@@ -1,7 +1,7 @@
 use ori_native::{App, Effect};
 use ori_native_core::{
-    Align, FlexContainer, FlexItem, Justify,
-    views::{flex_row, text, window},
+    Align, FlexContainer, FlexItem, Justify, LayoutContainer,
+    views::{column, pressable, text, window},
 };
 
 fn main() {
@@ -14,11 +14,22 @@ struct Data {
     count: u32,
 }
 
-fn ui(_data: &Data) -> impl Effect<Data> + use<> {
+fn ui(data: &Data) -> impl Effect<Data> + use<> {
     window(
-        flex_row((text("hello"), text("wahoo")))
-            .flex(1.0)
-            .justify_contents(Justify::SpaceAround)
-            .align_items(Align::Center),
+        column((
+            pressable(|_, state| {
+                if state.pressed {
+                    text("Pressed!")
+                } else {
+                    text("Press me!")
+                }
+            })
+            .on_press(|data: &mut Data| data.count += 1),
+            text(format!("Pressed {} times.", data.count)),
+        ))
+        .flex(1.0)
+        .gap(20.0)
+        .justify_contents(Justify::Center)
+        .align_items(Align::Center),
     )
 }

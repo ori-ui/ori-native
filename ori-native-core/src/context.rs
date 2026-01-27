@@ -1,6 +1,6 @@
-use ori::{Action, AnyView, Base, Proxied};
+use ori::{Action, AnyView, Base, Message, Proxied, Proxy, ViewId};
 
-use crate::{AnyShadow, Platform};
+use crate::{AnyShadow, Platform, views::WindowMessage};
 
 pub trait LayoutLeaf<P> {
     fn measure(
@@ -12,8 +12,9 @@ pub trait LayoutLeaf<P> {
 }
 
 pub struct Context<P> {
-    pub platform:    P,
-    pub layout_tree: taffy::TaffyTree<Box<dyn LayoutLeaf<P>>>,
+    pub platform:      P,
+    layout_tree:       taffy::TaffyTree<Box<dyn LayoutLeaf<P>>>,
+    layout_controller: Option<ViewId>,
 }
 
 impl<P> Context<P> {
@@ -21,7 +22,71 @@ impl<P> Context<P> {
         Self {
             platform,
             layout_tree: taffy::TaffyTree::new(),
+            layout_controller: None,
         }
+    }
+
+    pub fn new_layout_node(
+        &mut self,
+        style: taffy::Style,
+        children: &[taffy::NodeId],
+    ) -> taffy::NodeId {
+        self.layout_tree
+            .new_with_children(style, children)
+            .expect("should never fail")
+    }
+
+    pub fn new_layout_leaf<T>(&mut self, style: taffy::Style, leaf: T) -> taffy::NodeId
+    where
+        T: LayoutLeaf<P> + 'static,
+    {
+        self.layout_tree
+            .new_leaf_with_context(style, Box::new(leaf))
+            .expect("should never fail")
+    }
+
+    pub fn insert_layout_child(
+        &mut self,
+        parent: taffy::NodeId,
+        index: usize,
+        child: taffy::NodeId,
+    ) -> taffy::TaffyResult<()> {
+        self.layout_tree.insert_child_at_index(parent, index, child)
+    }
+
+    pub fn replace_layout_child(
+        &mut self,
+        parent: taffy::NodeId,
+        index: usize,
+        child: taffy::NodeId,
+    ) -> taffy::TaffyResult<()> {
+        self.layout_tree
+            .replace_child_at_index(parent, index, child)
+            .map(|_| ())
+    }
+
+    pub fn remove_layout_node(&mut self, node: taffy::NodeId) -> taffy::TaffyResult<()> {
+        self.layout_tree.remove(node).map(|_| ())
+    }
+
+    pub fn set_layout_style(
+        &mut self,
+        node: taffy::NodeId,
+        style: taffy::Style,
+    ) -> taffy::TaffyResult<()> {
+        self.layout_tree.set_style(node, style)
+    }
+
+    pub fn set_layout_leaf<T>(&mut self, node: taffy::NodeId, leaf: T) -> taffy::TaffyResult<()>
+    where
+        T: LayoutLeaf<P> + 'static,
+    {
+        self.layout_tree
+            .set_node_context(node, Some(Box::new(leaf)))
+    }
+
+    pub fn get_computed_layout(&self, node: taffy::NodeId) -> taffy::TaffyResult<&taffy::Layout> {
+        self.layout_tree.layout(node)
     }
 
     pub fn compute_layout(
@@ -45,6 +110,29 @@ impl<P> Context<P> {
                 None => taffy::Size::ZERO,
             },
         )
+    }
+
+    pub fn relayout(&mut self)
+    where
+        P: Proxied,
+    {
+        if let Some(layout_controller) = self.layout_controller.take() {
+            self.platform.proxy().message(Message::new(
+                WindowMessage::Relayout,
+                layout_controller,
+            ));
+        }
+    }
+
+    pub fn with_layout_controller<T>(
+        &mut self,
+        window: ViewId,
+        f: impl FnOnce(&mut Self) -> T,
+    ) -> T {
+        let previous = self.layout_controller.replace(window);
+        let output = f(self);
+        self.layout_controller = previous;
+        output
     }
 }
 

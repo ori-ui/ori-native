@@ -1,38 +1,50 @@
 use gtk4::prelude::{TextBufferExt, TextBufferExtManual, TextTagExt, TextViewExt, WidgetExt};
 use ori_native_core::{
-    FontStretch, FontWeight, LayoutLeaf, TextSpan,
-    widgets::{HasText, NativeText},
+    LayoutLeaf, Stretch, TextSpan, Weight,
+    native::{HasText, NativeText},
 };
 
-use crate::Gtk4Platform;
+use crate::{Platform, platform::StyleNode};
 
 pub struct Text {
-    view: gtk4::TextView,
+    view:  gtk4::TextView,
+    style: StyleNode,
 }
 
-impl NativeText<Gtk4Platform> for Text {
+impl NativeText<Platform> for Text {
     type Leaf = TextLeaf;
 
     fn widget(&self) -> &gtk4::Widget {
         self.view.as_ref()
     }
 
-    fn build(
-        _platform: &mut Gtk4Platform,
-        spans: Box<[TextSpan]>,
-        text: String,
-    ) -> (Self, Self::Leaf) {
+    fn build(platform: &mut Platform, spans: Box<[TextSpan]>, text: String) -> (Self, Self::Leaf) {
         let view = gtk4::TextView::new();
         view.set_editable(false);
         view.set_cursor_visible(false);
+        view.set_sensitive(false);
 
-        let buffer = view.buffer();
+        let style = platform.add_style("background: none;");
+        view.set_css_classes(&[&style.class()]);
+
+        let mut this = Self { view, style };
+        let leaf = this.set_text(spans, text);
+
+        (this, leaf)
+    }
+
+    fn teardown(self, platform: &mut Platform) {
+        platform.remove_style(self.style);
+    }
+
+    fn set_text(&mut self, spans: Box<[TextSpan]>, text: String) -> Self::Leaf {
+        let buffer = self.view.buffer();
         let mut iter = buffer.start_iter();
 
         for span in &spans {
             let tag = gtk4::TextTag::new(None);
             tag.set_size((span.attributes.size * pango::SCALE as f32) as i32);
-            tag.set_family(Some(&span.attributes.family));
+            tag.set_family(span.attributes.family.as_deref());
             tag.set_weight(span.attributes.weight.0 as i32);
             tag.set_stretch(convert_stretch(span.attributes.stretch));
             tag.set_style(match span.attributes.italic {
@@ -44,36 +56,15 @@ impl NativeText<Gtk4Platform> for Text {
             buffer.insert_with_tags(&mut iter, &text, &[&tag]);
         }
 
-        let leaf = TextLeaf {
-            view: view.clone(),
-            spans,
-            text,
-        };
-
-        let text = Self { view };
-
-        (text, leaf)
-    }
-
-    fn teardown(self, _platform: &mut Gtk4Platform) {}
-
-    fn set_text(&mut self, spans: Box<[TextSpan]>, text: String) -> Self::Leaf {
-        self.view.buffer().set_text(&text);
-
         TextLeaf {
             view: self.view.clone(),
             spans,
             text,
         }
     }
-
-    fn set_size(&mut self, width: f32, height: f32) {
-        self.view.set_width_request(width as i32 + 1);
-        self.view.set_height_request(height as i32);
-    }
 }
 
-impl HasText for Gtk4Platform {
+impl HasText for Platform {
     type Text = Text;
 }
 
@@ -83,10 +74,10 @@ pub struct TextLeaf {
     text:  String,
 }
 
-impl LayoutLeaf<Gtk4Platform> for TextLeaf {
+impl LayoutLeaf<Platform> for TextLeaf {
     fn measure(
         &mut self,
-        _platform: &mut Gtk4Platform,
+        _platform: &mut Platform,
         _known_size: taffy::Size<Option<f32>>,
         _available_space: taffy::Size<taffy::AvailableSpace>,
     ) -> taffy::Size<f32> {
@@ -99,8 +90,12 @@ impl LayoutLeaf<Gtk4Platform> for TextLeaf {
 
         for span in &self.spans {
             let mut desc = pango::FontDescription::new();
+
+            if let Some(ref family) = span.attributes.family {
+                desc.set_family(family);
+            }
+
             desc.set_size((span.attributes.size * pango::SCALE as f32) as i32);
-            desc.set_family(&span.attributes.family);
             desc.set_weight(convert_weight(span.attributes.weight));
             desc.set_stretch(convert_stretch(span.attributes.stretch));
             desc.set_style(match span.attributes.italic {
@@ -126,34 +121,34 @@ impl LayoutLeaf<Gtk4Platform> for TextLeaf {
     }
 }
 
-fn convert_weight(weight: FontWeight) -> pango::Weight {
+fn convert_weight(weight: Weight) -> pango::Weight {
     match weight {
-        FontWeight(100) => pango::Weight::Thin,
-        FontWeight(200) => pango::Weight::Ultralight,
-        FontWeight(300) => pango::Weight::Light,
-        FontWeight(350) => pango::Weight::Semilight,
-        FontWeight(380) => pango::Weight::Book,
-        FontWeight(400) => pango::Weight::Normal,
-        FontWeight(500) => pango::Weight::Medium,
-        FontWeight(600) => pango::Weight::Semibold,
-        FontWeight(700) => pango::Weight::Bold,
-        FontWeight(800) => pango::Weight::Ultrabold,
-        FontWeight(900) => pango::Weight::Heavy,
-        FontWeight(1000) => pango::Weight::Ultraheavy,
-        FontWeight(..) => pango::Weight::Normal,
+        Weight(100) => pango::Weight::Thin,
+        Weight(200) => pango::Weight::Ultralight,
+        Weight(300) => pango::Weight::Light,
+        Weight(350) => pango::Weight::Semilight,
+        Weight(380) => pango::Weight::Book,
+        Weight(400) => pango::Weight::Normal,
+        Weight(500) => pango::Weight::Medium,
+        Weight(600) => pango::Weight::Semibold,
+        Weight(700) => pango::Weight::Bold,
+        Weight(800) => pango::Weight::Ultrabold,
+        Weight(900) => pango::Weight::Heavy,
+        Weight(1000) => pango::Weight::Ultraheavy,
+        Weight(..) => pango::Weight::Normal,
     }
 }
 
-fn convert_stretch(stretch: FontStretch) -> pango::Stretch {
+fn convert_stretch(stretch: Stretch) -> pango::Stretch {
     match stretch {
-        FontStretch::UltraCondensed => pango::Stretch::UltraCondensed,
-        FontStretch::ExtraCondensed => pango::Stretch::ExtraCondensed,
-        FontStretch::Condensed => pango::Stretch::Condensed,
-        FontStretch::SemiCondensed => pango::Stretch::SemiCondensed,
-        FontStretch::Normal => pango::Stretch::Normal,
-        FontStretch::SemiExpanded => pango::Stretch::SemiExpanded,
-        FontStretch::Expanded => pango::Stretch::Expanded,
-        FontStretch::ExtraExpanded => pango::Stretch::ExtraExpanded,
-        FontStretch::UntraExpanded => pango::Stretch::UltraExpanded,
+        Stretch::UltraCondensed => pango::Stretch::UltraCondensed,
+        Stretch::ExtraCondensed => pango::Stretch::ExtraCondensed,
+        Stretch::Condensed => pango::Stretch::Condensed,
+        Stretch::SemiCondensed => pango::Stretch::SemiCondensed,
+        Stretch::Normal => pango::Stretch::Normal,
+        Stretch::SemiExpanded => pango::Stretch::SemiExpanded,
+        Stretch::Expanded => pango::Stretch::Expanded,
+        Stretch::ExtraExpanded => pango::Stretch::ExtraExpanded,
+        Stretch::UntraExpanded => pango::Stretch::UltraExpanded,
     }
 }

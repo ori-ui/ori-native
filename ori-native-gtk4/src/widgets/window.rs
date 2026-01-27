@@ -2,16 +2,16 @@ use gtk4::{
     glib::subclass::types::ObjectSubclassIsExt,
     prelude::{GtkWindowExt, WidgetExt},
 };
-use ori_native_core::widgets::{HasWindow, NativeWindow};
+use ori_native_core::native::{HasWindow, NativeWindow};
 
-use crate::Gtk4Platform;
+use crate::Platform;
 
 pub struct Window {
     window: ApplicationWindow,
 }
 
-impl NativeWindow<Gtk4Platform> for Window {
-    fn build(platform: &mut Gtk4Platform, contents: &gtk4::Widget) -> Self {
+impl NativeWindow<Platform> for Window {
+    fn build(platform: &mut Platform, contents: &gtk4::Widget) -> Self {
         let window = ApplicationWindow::new(&platform.application);
         window.set_child(Some(contents));
         window.show();
@@ -19,7 +19,7 @@ impl NativeWindow<Gtk4Platform> for Window {
         Self { window }
     }
 
-    fn teardown(self, _platform: &mut Gtk4Platform) {}
+    fn teardown(self, _platform: &mut Platform) {}
 
     fn get_size(&self) -> (u32, u32) {
         (
@@ -44,7 +44,7 @@ impl NativeWindow<Gtk4Platform> for Window {
     }
 }
 
-impl HasWindow for Gtk4Platform {
+impl HasWindow for Platform {
     type Window = Window;
 }
 

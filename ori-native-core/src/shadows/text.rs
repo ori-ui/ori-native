@@ -1,6 +1,6 @@
 use crate::{
     Context, Shadow, TextSpan,
-    widgets::{HasText, NativeText},
+    native::{HasText, NativeText},
 };
 
 pub struct TextShadow<P>
@@ -45,9 +45,5 @@ where
         self.text.widget()
     }
 
-    fn layout(&mut self, cx: &mut Context<P>, node: taffy::NodeId) {
-        let layout = cx.layout_tree.layout(node).unwrap();
-
-        self.text.set_size(layout.size.width, layout.size.height);
-    }
+    fn layout(&mut self, _cx: &mut Context<P>, _node: taffy::NodeId) {}
 }

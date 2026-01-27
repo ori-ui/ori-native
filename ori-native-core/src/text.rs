@@ -1,18 +1,34 @@
-use std::ops::Range;
+use std::{borrow::Cow, ops::Range};
+
+use crate::Color;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct FontAttributes {
+pub struct Font {
     pub size:    f32,
-    pub family:  String,
-    pub weight:  FontWeight,
-    pub stretch: FontStretch,
+    pub family:  Option<Cow<'static, str>>,
+    pub weight:  Weight,
+    pub stretch: Stretch,
     pub italic:  bool,
+    pub color:   Color,
+}
+
+impl Default for Font {
+    fn default() -> Self {
+        Self {
+            size:    14.0,
+            family:  None,
+            weight:  Weight::NORMAL,
+            stretch: Stretch::Normal,
+            italic:  false,
+            color:   Color::BLACK,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct FontWeight(pub u16);
+pub struct Weight(pub u16);
 
-impl FontWeight {
+impl Weight {
     pub const THIN: Self = Self(100);
     pub const EXTRA_LIGHT: Self = Self(200);
     pub const LIGHT: Self = Self(300);
@@ -25,7 +41,7 @@ impl FontWeight {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum FontStretch {
+pub enum Stretch {
     UltraCondensed,
     ExtraCondensed,
     Condensed,
@@ -39,6 +55,6 @@ pub enum FontStretch {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextSpan {
-    pub attributes: FontAttributes,
+    pub attributes: Font,
     pub range:      Range<usize>,
 }

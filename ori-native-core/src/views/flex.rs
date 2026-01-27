@@ -2,21 +2,24 @@ use ori::{Action, Message, Mut, View, ViewMarker, ViewSeq};
 use taffy::FlexDirection;
 
 use crate::{
-    AnyShadow, Context, FlexContainer, FlexItem, Layout, Pod, shadows::GroupShadow,
-    widgets::HasGroup,
+    AnyShadow, Color, Context, FlexContainer, FlexItem, Layout, LayoutContainer, Pod,
+    native::HasGroup, shadows::GroupShadow,
 };
 
-pub fn flex_row<V>(contents: V) -> Flex<V> {
+pub fn row<V>(contents: V) -> Flex<V> {
     Flex::new(contents, FlexDirection::Row)
 }
 
-pub fn flex_column<V>(contents: V) -> Flex<V> {
+pub fn column<V>(contents: V) -> Flex<V> {
     Flex::new(contents, FlexDirection::Column)
 }
 
 pub struct Flex<V> {
-    contents: V,
-    style:    taffy::Style,
+    contents:         V,
+    style:            taffy::Style,
+    background_color: Color,
+    border_color:     Color,
+    corner_radii:     [f32; 4],
 }
 
 impl<V> Flex<V> {
@@ -28,7 +31,31 @@ impl<V> Flex<V> {
                 flex_direction: direction,
                 ..Default::default()
             },
+            background_color: Color::TRANSPARENT,
+            border_color: Color::TRANSPARENT,
+            corner_radii: [0.0; 4],
         }
+    }
+
+    pub fn background_color(mut self, color: Color) -> Self {
+        self.background_color = color;
+        self
+    }
+
+    pub fn border_color(mut self, color: Color) -> Self {
+        self.border_color = color;
+        self
+    }
+
+    pub fn corners(
+        mut self,
+        top_left: f32,
+        top_right: f32,
+        bottom_right: f32,
+        bottom_left: f32,
+    ) -> Self {
+        self.corner_radii = [top_left, top_right, bottom_right, bottom_left];
+        self
     }
 }
 
@@ -38,6 +65,7 @@ impl<V> Layout for Flex<V> {
     }
 }
 
+impl<V> LayoutContainer for Flex<V> {}
 impl<V> FlexItem for Flex<V> {}
 impl<V> FlexContainer for Flex<V> {}
 
@@ -51,9 +79,12 @@ where
     type State = V::State;
 
     fn build(self, cx: &mut Context<P>, data: &mut T) -> (Self::Element, Self::State) {
-        let node = cx.layout_tree.new_leaf(self.style).unwrap();
+        let node = cx.new_layout_node(self.style, &[]);
 
         let mut shadow = GroupShadow::new(cx);
+        shadow.set_background_color(cx, self.background_color);
+        shadow.set_border_color(cx, self.border_color);
+        shadow.set_corner_radii(cx, self.corner_radii);
 
         let state = self
             .contents
@@ -71,7 +102,10 @@ where
         cx: &mut Context<P>,
         data: &mut T,
     ) {
-        cx.layout_tree.set_style(*element.node, self.style).unwrap();
+        let _ = cx.set_layout_style(*element.node, self.style);
+        (element.shadow).set_background_color(cx, self.background_color);
+        (element.shadow).set_border_color(cx, self.border_color);
+        (element.shadow).set_corner_radii(cx, self.corner_radii);
 
         self.contents.seq_rebuild(
             &mut element.shadow.elements(*element.node),
@@ -103,7 +137,8 @@ where
             state,
             cx,
         );
+
         element.shadow.teardown(cx);
-        cx.layout_tree.remove(element.node).unwrap();
+        let _ = cx.remove_layout_node(element.node);
     }
 }

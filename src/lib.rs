@@ -5,7 +5,7 @@ pub use ori::*;
 
 use ori_native_gtk4 as platform;
 
-pub type Platform = platform::Gtk4Platform;
+pub type Platform = platform::Platform;
 pub type Context = ori_native_core::Context<Platform>;
 pub type Element = <Context as ori::Base>::Element;
 

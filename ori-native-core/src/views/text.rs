@@ -1,8 +1,9 @@
+use std::borrow::Cow;
+
 use ori::{Action, Message, Mut, View, ViewMarker};
 
 use crate::{
-    Context, FontAttributes, FontWeight, Pod, TextSpan, shadows::TextShadow, text::FontStretch,
-    widgets::HasText,
+    Color, Context, Font, Pod, Stretch, TextSpan, Weight, native::HasText, shadows::TextShadow,
 };
 
 pub fn text(text: impl Into<String>) -> Text {
@@ -10,22 +11,46 @@ pub fn text(text: impl Into<String>) -> Text {
 }
 
 pub struct Text {
-    attrs: FontAttributes,
-    text:  String,
+    font: Font,
+    text: String,
 }
 
 impl Text {
     pub fn new(text: impl Into<String>) -> Self {
         Self {
-            attrs: FontAttributes {
-                size:    16.0,
-                family:  String::from("Ubuntu Light"),
-                weight:  FontWeight::NORMAL,
-                stretch: FontStretch::Normal,
-                italic:  false,
-            },
-            text:  text.into(),
+            font: Default::default(),
+            text: text.into(),
         }
+    }
+
+    pub fn size(mut self, size: f32) -> Self {
+        self.font.size = size;
+        self
+    }
+
+    pub fn family(mut self, family: impl Into<Cow<'static, str>>) -> Self {
+        self.font.family = Some(family.into());
+        self
+    }
+
+    pub fn weight(mut self, weight: Weight) -> Self {
+        self.font.weight = weight;
+        self
+    }
+
+    pub fn stretch(mut self, stretch: Stretch) -> Self {
+        self.font.stretch = stretch;
+        self
+    }
+
+    pub fn italic(mut self, italic: bool) -> Self {
+        self.font.italic = italic;
+        self
+    }
+
+    pub fn color(mut self, color: Color) -> Self {
+        self.font.color = color;
+        self
     }
 }
 
@@ -39,16 +64,12 @@ where
 
     fn build(self, cx: &mut Context<P>, _data: &mut T) -> (Self::Element, Self::State) {
         let spans = [TextSpan {
-            attributes: self.attrs,
+            attributes: self.font,
             range:      0..self.text.len(),
         }];
 
         let (shadow, leaf) = TextShadow::new(cx, spans.into(), self.text);
-
-        let node = cx
-            .layout_tree
-            .new_leaf_with_context(Default::default(), Box::new(leaf))
-            .unwrap();
+        let node = cx.new_layout_leaf(Default::default(), leaf);
 
         let pod = Pod { node, shadow };
 
@@ -63,12 +84,12 @@ where
         _data: &mut T,
     ) {
         let spans = [TextSpan {
-            attributes: self.attrs,
+            attributes: self.font,
             range:      0..self.text.len(),
         }];
 
         let leaf = element.shadow.set_text(spans.into(), self.text);
-        let _ = (cx.layout_tree).set_node_context(*element.node, Some(Box::new(leaf)));
+        let _ = cx.set_layout_leaf(*element.node, leaf);
     }
 
     fn message(
@@ -83,6 +104,6 @@ where
 
     fn teardown(element: Self::Element, _state: Self::State, cx: &mut Context<P>) {
         element.shadow.teardown(cx);
-        let _ = cx.layout_tree.remove(element.node);
+        let _ = cx.remove_layout_node(element.node);
     }
 }

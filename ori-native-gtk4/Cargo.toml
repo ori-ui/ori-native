@@ -12,6 +12,7 @@ ori = { workspace = true }
 taffy = { workspace = true }
 
 gtk4 = "0.10"
+gdk4 = "0.10"
 pango = "0.21"
 
 [dependencies.tokio]

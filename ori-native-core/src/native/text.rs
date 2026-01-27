@@ -16,6 +16,4 @@ where
     fn teardown(self, platform: &mut P);
 
     fn set_text(&mut self, spans: Box<[TextSpan]>, text: String) -> Self::Leaf;
-
-    fn set_size(&mut self, width: f32, height: f32);
 }
