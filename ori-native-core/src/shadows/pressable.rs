@@ -24,7 +24,11 @@ where
     }
 
     pub fn set_on_press(&mut self, on_press: impl Fn(bool) + 'static) {
-        self.pressable.set_on_click(on_press);
+        self.pressable.set_on_press(on_press);
+    }
+
+    pub fn set_on_hover(&mut self, on_hover: impl Fn(bool) + 'static) {
+        self.pressable.set_on_hover(on_hover);
     }
 
     pub fn set_on_focus(&mut self, on_focus: impl Fn(bool) + 'static) {

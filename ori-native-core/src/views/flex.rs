@@ -47,15 +47,41 @@ impl<V> Flex<V> {
         self
     }
 
-    pub fn corners(
-        mut self,
+    pub fn corner_all(self, radius: f32) -> Self {
+        self.corner(radius, radius, radius, radius)
+    }
+
+    pub fn corner_top_left(mut self, radius: f32) -> Self {
+        self.corner_radii[0] = radius;
+        self
+    }
+
+    pub fn corner_top_right(mut self, radius: f32) -> Self {
+        self.corner_radii[1] = radius;
+        self
+    }
+
+    pub fn corner_bottom_right(mut self, radius: f32) -> Self {
+        self.corner_radii[2] = radius;
+        self
+    }
+
+    pub fn corner_bottom_left(mut self, radius: f32) -> Self {
+        self.corner_radii[3] = radius;
+        self
+    }
+
+    pub fn corner(
+        self,
         top_left: f32,
         top_right: f32,
         bottom_right: f32,
         bottom_left: f32,
     ) -> Self {
-        self.corner_radii = [top_left, top_right, bottom_right, bottom_left];
-        self
+        self.corner_top_left(top_left)
+            .corner_top_right(top_right)
+            .corner_bottom_right(bottom_right)
+            .corner_bottom_left(bottom_left)
     }
 }
 

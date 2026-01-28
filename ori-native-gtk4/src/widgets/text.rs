@@ -4,11 +4,10 @@ use ori_native_core::{
     native::{HasText, NativeText},
 };
 
-use crate::{Platform, platform::StyleNode};
+use crate::Platform;
 
 pub struct Text {
-    view:  gtk4::TextView,
-    style: StyleNode,
+    view: gtk4::TextView,
 }
 
 impl NativeText<Platform> for Text {
@@ -18,24 +17,19 @@ impl NativeText<Platform> for Text {
         self.view.as_ref()
     }
 
-    fn build(platform: &mut Platform, spans: Box<[TextSpan]>, text: String) -> (Self, Self::Leaf) {
+    fn build(_platform: &mut Platform, spans: Box<[TextSpan]>, text: String) -> (Self, Self::Leaf) {
         let view = gtk4::TextView::new();
         view.set_editable(false);
         view.set_cursor_visible(false);
         view.set_sensitive(false);
 
-        let style = platform.add_style("background: none;");
-        view.set_css_classes(&[&style.class()]);
-
-        let mut this = Self { view, style };
+        let mut this = Self { view };
         let leaf = this.set_text(spans, text);
 
         (this, leaf)
     }
 
-    fn teardown(self, platform: &mut Platform) {
-        platform.remove_style(self.style);
-    }
+    fn teardown(self, _platform: &mut Platform) {}
 
     fn set_text(&mut self, spans: Box<[TextSpan]>, text: String) -> Self::Leaf {
         let buffer = self.view.buffer();
@@ -47,10 +41,18 @@ impl NativeText<Platform> for Text {
             tag.set_family(span.attributes.family.as_deref());
             tag.set_weight(span.attributes.weight.0 as i32);
             tag.set_stretch(convert_stretch(span.attributes.stretch));
+
             tag.set_style(match span.attributes.italic {
                 false => pango::Style::Normal,
                 true => pango::Style::Italic,
             });
+
+            tag.set_foreground_rgba(Some(&gdk4::RGBA::new(
+                span.attributes.color.r,
+                span.attributes.color.g,
+                span.attributes.color.b,
+                span.attributes.color.a,
+            )));
 
             buffer.tag_table().add(&tag);
             buffer.insert_with_tags(&mut iter, &text, &[&tag]);

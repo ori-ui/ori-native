@@ -30,6 +30,18 @@ impl Platform {
     ) -> Self {
         let runtime = Arc::new(tokio::runtime::Runtime::new().unwrap());
 
+        let provider = gtk4::CssProvider::new();
+        provider.load_from_data(
+            "textview { background: transparent; }
+             textview text { background: transparent; }",
+        );
+
+        gtk4::style_context_add_provider_for_display(
+            &display,
+            &provider,
+            gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+
         Self {
             proxy: Gtk4Proxy { sender, runtime },
             display,

@@ -60,29 +60,36 @@ where
     P: HasText,
 {
     type Element = Pod<TextShadow<P>>;
-    type State = ();
+    type State = (Font, String);
 
     fn build(self, cx: &mut Context<P>, _data: &mut T) -> (Self::Element, Self::State) {
         let spans = [TextSpan {
-            attributes: self.font,
+            attributes: self.font.clone(),
             range:      0..self.text.len(),
         }];
 
-        let (shadow, leaf) = TextShadow::new(cx, spans.into(), self.text);
+        let (shadow, leaf) = TextShadow::new(cx, spans.into(), self.text.clone());
         let node = cx.new_layout_leaf(Default::default(), leaf);
 
         let pod = Pod { node, shadow };
 
-        (pod, ())
+        (pod, (self.font, self.text))
     }
 
     fn rebuild(
         self,
         element: Mut<'_, Self::Element>,
-        _state: &mut Self::State,
+        (font, text): &mut Self::State,
         cx: &mut Context<P>,
         _data: &mut T,
     ) {
+        if self.font == *font && self.text == *text {
+            return;
+        }
+
+        *font = self.font.clone();
+        *text = self.text.clone();
+
         let spans = [TextSpan {
             attributes: self.font,
             range:      0..self.text.len(),

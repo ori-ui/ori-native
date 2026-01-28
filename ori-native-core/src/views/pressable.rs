@@ -13,6 +13,7 @@ pub fn pressable<V, T>(build: impl FnMut(&T, &PressState) -> V + 'static) -> Pre
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PressState {
     pub pressed: bool,
+    pub hovered: bool,
     pub focused: bool,
 }
 
@@ -41,6 +42,7 @@ impl<V, T> Pressable<V, T> {
 
 enum PressableMessage {
     Pressed(bool),
+    Hovered(bool),
     Focused(bool),
 }
 
@@ -56,6 +58,7 @@ where
     fn build(mut self, cx: &mut Context<P>, data: &mut T) -> (Self::Element, Self::State) {
         let press = PressState {
             pressed: false,
+            hovered: false,
             focused: false,
         };
 
@@ -72,6 +75,17 @@ where
             move |pressed| {
                 proxy.message(Message::new(
                     PressableMessage::Pressed(pressed),
+                    view_id,
+                ));
+            }
+        });
+
+        shadow.set_on_hover({
+            let proxy = cx.proxy();
+
+            move |hovered| {
+                proxy.message(Message::new(
+                    PressableMessage::Hovered(hovered),
                     view_id,
                 ));
             }
@@ -148,6 +162,7 @@ where
                     }
                 }
 
+                PressableMessage::Hovered(hovered) => state.press.hovered = hovered,
                 PressableMessage::Focused(focused) => state.press.focused = focused,
             }
 

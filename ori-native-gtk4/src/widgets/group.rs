@@ -1,5 +1,5 @@
 use gdk4::glib::subclass::types::ObjectSubclassIsExt;
-use gtk4::prelude::WidgetExt;
+use gtk4::prelude::{AccessibleExt, WidgetExt};
 use ori_native_core::{
     Color,
     native::{HasGroup, NativeGroup},
@@ -19,6 +19,7 @@ impl NativeGroup<Platform> for Group {
 
     fn build(_platform: &mut Platform) -> Self {
         let group = GroupWidget::new();
+        group.set_accessible_role(gtk4::AccessibleRole::Group);
 
         Self {
             group,
@@ -99,29 +100,39 @@ impl GroupWidget {
     }
 
     pub fn set_size(&self, width: i32, height: i32) {
-        self.imp().width.set(width);
-        self.imp().height.set(height);
-        self.queue_resize();
+        if self.imp().width.get() != width || self.imp().height.get() != height {
+            self.imp().width.set(width);
+            self.imp().height.set(height);
+            self.queue_resize();
+        }
     }
 
     pub fn set_background_color(&self, background_color: gdk4::RGBA) {
-        self.imp().background_color.set(background_color);
-        self.queue_draw();
+        if self.imp().background_color.get() != background_color {
+            self.imp().background_color.set(background_color);
+            self.queue_draw();
+        }
     }
 
     pub fn set_border_color(&self, border_color: gdk4::RGBA) {
-        self.imp().border_color.set(border_color);
-        self.queue_draw();
+        if self.imp().border_color.get() != border_color {
+            self.imp().border_color.set(border_color);
+            self.queue_draw();
+        }
     }
 
     pub fn set_corner_radii(&self, corner_radii: [f32; 4]) {
-        self.imp().corner_radii.set(corner_radii);
-        self.queue_draw();
+        if self.imp().corner_radii.get() != corner_radii {
+            self.imp().corner_radii.set(corner_radii);
+            self.queue_draw();
+        }
     }
 
     pub fn set_border_width(&self, border_width: [f32; 4]) {
-        self.imp().border_width.set(border_width);
-        self.queue_draw();
+        if self.imp().border_width.get() != border_width {
+            self.imp().border_width.set(border_width);
+            self.queue_draw();
+        }
     }
 
     pub fn insert_child(&self, index: usize, child: &gtk4::Widget) {
@@ -156,6 +167,11 @@ impl GroupWidget {
 
     pub fn set_child_layout(&self, index: usize, x: i32, y: i32, width: i32, height: i32) {
         if let Some(child) = self.imp().children.borrow_mut().get_mut(index) {
+            if child.x != x || child.y != y || child.width != width || child.height != height {
+                child.widget.queue_allocate();
+                child.widget.queue_resize();
+            }
+
             child.x = x;
             child.y = y;
             child.width = width;
@@ -230,28 +246,35 @@ mod imp {
     impl WidgetImpl for GroupWidget {
         fn snapshot(&self, snapshot: &gtk4::Snapshot) {
             let alloc = self.obj().allocation();
-            let rect = graphene::Rect::new(
-                0.0,
-                0.0,
-                alloc.width() as f32,
-                alloc.height() as f32,
-            );
-
             let [tl, tr, br, bl] = self.corner_radii.get();
 
-            snapshot.append_border(
-                &gsk::RoundedRect::new(
-                    rect,
-                    graphene::Size::new(tl, tl),
-                    graphene::Size::new(tr, tr),
-                    graphene::Size::new(br, br),
-                    graphene::Size::new(bl, bl),
+            let rect = gsk::RoundedRect::new(
+                graphene::Rect::new(
+                    0.0,
+                    0.0,
+                    alloc.width() as f32,
+                    alloc.height() as f32,
                 ),
+                graphene::Size::new(tl, tl),
+                graphene::Size::new(tr, tr),
+                graphene::Size::new(br, br),
+                graphene::Size::new(bl, bl),
+            );
+
+            snapshot.push_rounded_clip(&rect);
+
+            snapshot.append_border(
+                &rect,
                 &self.border_width.get(),
                 &[self.border_color.get(); 4],
             );
 
-            snapshot.append_color(&self.background_color.get(), &rect);
+            snapshot.append_color(
+                &self.background_color.get(),
+                rect.bounds(),
+            );
+
+            snapshot.pop();
 
             self.parent_snapshot(snapshot);
         }

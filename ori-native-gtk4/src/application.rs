@@ -55,6 +55,7 @@ impl Application {
     }
 }
 
+#[derive(Debug)]
 pub(crate) enum Event {
     Activate,
     Quit,
