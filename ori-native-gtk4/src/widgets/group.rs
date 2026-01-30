@@ -270,15 +270,15 @@ mod imp {
 
             snapshot.push_rounded_clip(&rect);
 
+            snapshot.append_color(
+                &self.background_color.get(),
+                rect.bounds(),
+            );
+
             snapshot.append_border(
                 &rect,
                 &self.border_width.get(),
                 &[self.border_color.get(); 4],
-            );
-
-            snapshot.append_color(
-                &self.background_color.get(),
-                rect.bounds(),
             );
 
             snapshot.pop();
