@@ -1,9 +1,11 @@
 textview {
     background: transparent;
+    color: transparent;
 }
 
 textview text {
     background: transparent;
+    color: transparent;
 }
 
 scrolledwindow scrollbar.horizontal slider {

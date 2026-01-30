@@ -16,6 +16,7 @@ pub struct Window<V> {
     contents: V,
 }
 
+#[derive(Debug)]
 pub enum WindowMessage {
     AnimationFrame(Duration),
     StartAnimating,
@@ -84,7 +85,7 @@ where
 
         let (width, height) = window.get_size();
 
-        let mut state = WindowState {
+        let state = WindowState {
             node,
             view_id,
             window,
@@ -97,8 +98,6 @@ where
             contents,
             state,
         };
-
-        state.layout(cx, data);
 
         ((), state)
     }
@@ -118,8 +117,6 @@ where
                 data,
             );
         });
-
-        state.layout(cx, data);
     }
 
     fn message(
@@ -129,68 +126,66 @@ where
         data: &mut T,
         message: &mut Message,
     ) -> Action {
-        match message.take_targeted(state.view_id) {
-            Some(WindowMessage::AnimationFrame(delta)) => {
-                if state.animating == 0 {
-                    return Action::new();
+        if let Some(message) = message.take_targeted(state.view_id) {
+            match message {
+                WindowMessage::AnimationFrame(delta) => {
+                    if state.animating == 0 {
+                        return Action::new();
+                    }
+
+                    let mut message = Message::new(AnimationFrame(delta), None);
+
+                    cx.with_window(state.view_id, |cx| {
+                        V::message(
+                            state.contents.as_mut(state.node),
+                            &mut state.state,
+                            cx,
+                            data,
+                            &mut message,
+                        )
+                    })
                 }
 
-                let mut message = Message::new(AnimationFrame(delta), None);
+                WindowMessage::StartAnimating => {
+                    if state.animating == 0 {
+                        state.window.start_animating();
+                    }
 
-                cx.with_window(state.view_id, |cx| {
-                    V::message(
-                        state.contents.as_mut(state.node),
-                        &mut state.state,
-                        cx,
-                        data,
-                        &mut message,
-                    )
-                })
-            }
+                    state.animating += 1;
 
-            Some(WindowMessage::StartAnimating) => {
-                if state.animating == 0 {
-                    state.window.start_animating();
+                    Action::new()
                 }
 
-                state.animating += 1;
+                WindowMessage::StopAnimating => {
+                    state.animating -= 1;
 
-                Action::new()
-            }
+                    if state.animating == 0 {
+                        state.window.stop_animating();
+                    }
 
-            Some(WindowMessage::StopAnimating) => {
-                state.animating -= 1;
-
-                if state.animating == 0 {
-                    state.window.stop_animating();
+                    Action::new()
                 }
 
-                Action::new()
-            }
+                WindowMessage::CloseRequested => {
+                    cx.platform.quit();
 
-            Some(WindowMessage::CloseRequested) => {
-                cx.platform.quit();
-
-                Action::new()
-            }
-
-            Some(WindowMessage::Relayout) => {
-                state.layout(cx, data);
-
-                Action::new()
-            }
-
-            Some(WindowMessage::Resized) => {
-                let (width, height) = state.window.get_size();
-
-                if state.width != width || state.height != height {
-                    state.layout(cx, data);
+                    Action::new()
                 }
 
-                Action::new()
-            }
+                WindowMessage::Relayout => state.layout(cx, data),
 
-            None => cx.with_window(state.view_id, |cx| {
+                WindowMessage::Resized => {
+                    let (width, height) = state.window.get_size();
+
+                    if state.width != width || state.height != height {
+                        state.layout(cx, data)
+                    } else {
+                        Action::new()
+                    }
+                }
+            }
+        } else {
+            cx.with_window(state.view_id, |cx| {
                 V::message(
                     state.contents.as_mut(state.node),
                     &mut state.state,
@@ -198,7 +193,7 @@ where
                     data,
                     message,
                 )
-            }),
+            })
         }
     }
 
@@ -236,7 +231,7 @@ where
     P: HasWindow,
     V: ShadowView<P, T>,
 {
-    fn layout(&mut self, cx: &mut Context<P>, data: &mut T) {
+    fn layout(&mut self, cx: &mut Context<P>, data: &mut T) -> Action {
         let (width, height) = self.window.get_size();
 
         self.width = width;
@@ -275,7 +270,7 @@ where
         let _ = cx.set_layout_style(self.node, style);
         let _ = cx.compute_layout(self.node, size);
 
-        let action = cx.with_window(self.view_id, |cx| {
+        cx.with_window(self.view_id, |cx| {
             V::message(
                 self.contents.as_mut(self.node),
                 &mut self.state,
@@ -283,8 +278,6 @@ where
                 data,
                 &mut Message::new(Lifecycle::Layout, None),
             )
-        });
-
-        cx.send_action(action);
+        })
     }
 }

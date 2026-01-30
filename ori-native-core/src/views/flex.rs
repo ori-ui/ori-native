@@ -1,8 +1,8 @@
 use ori::{Action, Message, Mut, View, ViewMarker, ViewSeq};
 
 use crate::{
-    AnyShadow, Color, Context, Direction, FlexContainer, Layout, LayoutContainer, Lifecycle, Pod,
-    native::HasGroup, shadows::GroupShadow,
+    AnyShadow, BorderLayout, Color, ContainerLayout, Context, Direction, FlexLayout, Layout,
+    Lifecycle, Pod, native::HasGroup, shadows::GroupShadow,
 };
 
 pub fn row<V>(contents: V) -> Flex<V> {
@@ -51,8 +51,8 @@ impl<V> Flex<V> {
         self
     }
 
-    pub fn corner(self, radius: f32) -> Self {
-        self.corner_all(radius, radius, radius, radius)
+    pub fn corners(self, radius: f32) -> Self {
+        self.corners_all(radius, radius, radius, radius)
     }
 
     pub fn corner_top_left(mut self, radius: f32) -> Self {
@@ -75,7 +75,7 @@ impl<V> Flex<V> {
         self
     }
 
-    pub fn corner_all(
+    pub fn corners_all(
         self,
         top_left: f32,
         top_right: f32,
@@ -95,8 +95,9 @@ impl<V> Layout for Flex<V> {
     }
 }
 
-impl<V> LayoutContainer for Flex<V> {}
-impl<V> FlexContainer for Flex<V> {}
+impl<V> ContainerLayout for Flex<V> {}
+impl<V> FlexLayout for Flex<V> {}
+impl<V> BorderLayout for Flex<V> {}
 
 impl<V> ViewMarker for Flex<V> {}
 impl<P, T, V> View<Context<P>, T> for Flex<V>

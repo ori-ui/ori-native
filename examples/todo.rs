@@ -10,23 +10,34 @@ struct Data {
     todos: Vec<Todo>,
 }
 
+struct Remove(usize);
+
 struct Todo {
     name: String,
+    done: bool,
 }
 
 fn ui(data: &Data) -> impl Effect<Data> + use<> {
-    window(
-        column(
-            column((input(), todos(data)))
+    effects((
+        window(
+            column(
+                column((
+                    input(),
+                    (!data.todos.is_empty()).then(|| todos(data)),
+                ))
                 .width(300.0)
                 .align_items(Align::Stretch)
                 .border(1.0)
                 .border_color(Color::BLACK),
-        )
-        .flex(1.0)
-        .justify_contents(Justify::Center)
-        .align_items(Align::Center),
-    )
+            )
+            .flex(1.0)
+            .justify_contents(Justify::Center)
+            .align_items(Align::Center),
+        ),
+        receive(|data: &mut Data, Remove(index)| {
+            data.todos.remove(index);
+        }),
+    ))
 }
 
 fn input() -> impl View<Data> + use<> {
@@ -45,9 +56,13 @@ fn input() -> impl View<Data> + use<> {
                 })
                 .flex(1.0))
             .padding(8.0)
-            .border(1.0)
         },
     )
+}
+
+fn add_todo(data: &mut Data, name: String) {
+    // add a todo to the top of the list
+    data.todos.insert(0, Todo { name, done: false })
 }
 
 fn todos(data: &Data) -> impl View<Data> + use<> {
@@ -56,19 +71,60 @@ fn todos(data: &Data) -> impl View<Data> + use<> {
         .iter()
         .enumerate()
         .map(|(i, x)| todo(i, x))
-        .rev()
         .collect::<Vec<_>>();
 
-    vscroll(column(todos)).max_height(400.0).flex(1.0)
-}
-
-fn todo(index: usize, todo: &Todo) -> impl View<Data> + use<> {
-    row(text(&todo.name).family("Fira Code").strikethrough(true))
-        .padding(8.0)
+    column(vscroll(column(todos)))
+        .max_height(400.0)
         .border_top(1.0)
         .border_color(Color::BLACK)
 }
 
-fn add_todo(data: &mut Data, name: String) {
-    data.todos.push(Todo { name })
+fn todo(index: usize, _todo: &Todo) -> impl View<Data> + use<> {
+    let view = pressable(move |todo: &Todo, _| {
+        let name = if todo.done {
+            text(&todo.name)
+                .color(Color::BLACK.fade(0.7))
+                .strikethrough(true)
+        } else {
+            text(&todo.name)
+        };
+
+        row((
+            done(todo),
+            name.flex(1.0),
+            remove(index),
+        ))
+        .gap(8.0)
+        .padding(8.0)
+        .border_top(if index > 0 { 1.0 } else { 0.0 })
+        .border_color(Color::BLACK)
+        .justify_contents(Justify::SpaceBetween)
+    })
+    .on_press(|todo: &mut Todo| todo.done = !todo.done);
+
+    map(view, move |data: &mut Data, f| {
+        f(&mut data.todos[index])
+    })
+}
+
+fn done(todo: &Todo) -> impl View<Todo> + use<> {
+    row(todo.done.then(|| text("x").color(Color::GREEN)))
+        .size(24.0, 24.0)
+        .border(1.0)
+        .corners(12.0)
+        .border_color(Color::BLACK)
+        .justify_contents(Justify::Center)
+        .align_items(Align::Center)
+}
+
+fn remove<T>(index: usize) -> impl View<T> {
+    pressable(|_, _| {
+        row(text("x"))
+            .size(24.0, 24.0)
+            .corners(8.0)
+            .background_color(Color::RED)
+            .justify_contents(Justify::Center)
+            .align_items(Align::Center)
+    })
+    .on_press(move |_| Message::new(Remove(index), None))
 }

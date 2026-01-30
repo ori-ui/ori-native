@@ -24,8 +24,6 @@ pub struct TextInput {
     font:             Font,
     placeholder_font: Font,
     newline:          Rc<Cell<Newline>>,
-
-    is_placeholder: Rc<Cell<bool>>,
 }
 
 impl NativeTextInput<Platform> for TextInput {
@@ -47,7 +45,6 @@ impl NativeTextInput<Platform> for TextInput {
         view.add_css_class(&view_style.class());
 
         let newline = Rc::new(Cell::new(Newline::Enter));
-        let is_placeholder = Rc::new(Cell::new(true));
 
         let controller = gtk4::EventControllerFocus::new();
         controller.connect_enter({
@@ -83,8 +80,6 @@ impl NativeTextInput<Platform> for TextInput {
             font: Default::default(),
             placeholder_font: Default::default(),
             newline,
-
-            is_placeholder,
         }
     }
 
@@ -92,26 +87,9 @@ impl NativeTextInput<Platform> for TextInput {
         platform.remove_style(self.view_style);
     }
 
-    fn get_text(&self) -> String {
-        let buffer = self.view.buffer();
-        let text = buffer.text(
-            &buffer.start_iter(),
-            &buffer.end_iter(),
-            true,
-        );
-
-        text.into()
-    }
-
     fn set_on_change(&mut self, _platform: &mut Platform, on_changed: impl Fn(String) + 'static) {
         self.view.buffer().connect_text_notify({
-            let is_placeholder = self.is_placeholder.clone();
-
             move |buffer| {
-                if is_placeholder.get() {
-                    return;
-                }
-
                 let text = buffer.text(
                     &buffer.start_iter(),
                     &buffer.end_iter(),

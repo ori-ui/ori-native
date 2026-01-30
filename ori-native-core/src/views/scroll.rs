@@ -91,7 +91,7 @@ where
         element.shadow.set_direction(self.direction);
 
         self.contents.rebuild(
-            element.shadow.contents_mut(*element.node),
+            element.shadow.element(*element.node),
             state,
             cx,
             data,
@@ -112,7 +112,7 @@ where
         }
 
         V::message(
-            element.shadow.contents_mut(*element.node),
+            element.shadow.element(*element.node),
             state,
             cx,
             data,

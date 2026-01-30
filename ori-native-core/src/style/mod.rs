@@ -1,6 +1,6 @@
 mod layout;
 
 pub use layout::{
-    Align, AutoLength, Direction, FlexContainer, Justify, Layout, LayoutContainer, Length, Percent,
-    Position,
+    Align, AutoLength, BorderLayout, ContainerLayout, Direction, FlexLayout, Justify, Layout,
+    Length, Percent, Position,
 };

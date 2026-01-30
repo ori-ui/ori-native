@@ -206,6 +206,22 @@ pub trait Layout: Sized {
             .padding_left(left)
     }
 
+    fn flex(self, amount: f32) -> Self {
+        self.flex_grow(amount).flex_shrink(amount)
+    }
+
+    fn flex_grow(mut self, amount: f32) -> Self {
+        self.style_mut().flex_grow = amount;
+        self
+    }
+
+    fn flex_shrink(mut self, amount: f32) -> Self {
+        self.style_mut().flex_shrink = amount;
+        self
+    }
+}
+
+pub trait BorderLayout: Layout {
     fn border(self, width: impl Into<Length>) -> Self {
         let width = width.into();
         self.border_all(width, width, width, width)
@@ -243,23 +259,9 @@ pub trait Layout: Sized {
             .border_bottom(bottom)
             .border_left(left)
     }
-
-    fn flex(self, amount: f32) -> Self {
-        self.flex_grow(amount).flex_shrink(amount)
-    }
-
-    fn flex_grow(mut self, amount: f32) -> Self {
-        self.style_mut().flex_grow = amount;
-        self
-    }
-
-    fn flex_shrink(mut self, amount: f32) -> Self {
-        self.style_mut().flex_shrink = amount;
-        self
-    }
 }
 
-pub trait LayoutContainer: Layout {
+pub trait ContainerLayout: Layout {
     fn gap(mut self, gap: impl Into<Length>) -> Self {
         self.style_mut().gap.width = gap.into().into_taffy();
         self.style_mut().gap.height = self.style_mut().gap.width;
@@ -267,7 +269,7 @@ pub trait LayoutContainer: Layout {
     }
 }
 
-pub trait FlexContainer: LayoutContainer {
+pub trait FlexLayout: ContainerLayout {
     fn align_items(mut self, align: Align) -> Self {
         self.style_mut().align_items = Some(align.into_taffy());
         self

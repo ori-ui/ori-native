@@ -26,7 +26,7 @@ where
         }
     }
 
-    pub fn contents_mut(&mut self, parent: taffy::NodeId) -> PodMut<'_, S> {
+    pub fn element(&mut self, parent: taffy::NodeId) -> PodMut<'_, S> {
         self.contents.as_mut(parent)
     }
 

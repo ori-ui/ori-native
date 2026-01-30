@@ -25,10 +25,6 @@ where
         self.textinput.teardown(&mut cx.platform);
     }
 
-    pub fn get_text(&self) -> String {
-        self.textinput.get_text()
-    }
-
     pub fn set_on_change(&mut self, cx: &mut Context<P>, on_change: impl Fn(String) + 'static) {
         self.textinput.set_on_change(&mut cx.platform, on_change);
     }

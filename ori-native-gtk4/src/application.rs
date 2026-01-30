@@ -1,8 +1,5 @@
-use gtk4::{
-    gio::{self, prelude::ApplicationExt},
-    glib,
-};
-use ori::{Effect, Message, Proxy};
+use gtk4::prelude::ApplicationExt;
+use ori::{Effect, Message, Proxied};
 use ori_native_core::Context;
 
 use crate::Platform;
@@ -141,7 +138,7 @@ where
 
             Event::Message(mut event) => {
                 if let Some(ref mut state) = self.state {
-                    let action = V::message(
+                    let mut action = V::message(
                         (),
                         state,
                         &mut self.context,
@@ -149,7 +146,13 @@ where
                         &mut event,
                     );
 
-                    self.context.platform.proxy.action(action);
+                    if action.take_rebuild() {
+                        let view = (self.build)(self.data);
+                        view.rebuild((), state, &mut self.context, self.data);
+                    }
+
+                    action.rebuild = false;
+                    self.context.send_action(action);
                 }
             }
         }

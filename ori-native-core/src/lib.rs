@@ -16,8 +16,8 @@ pub use lifecycle::Lifecycle;
 pub use platform::Platform;
 pub use shadow::{AnyShadow, Pod, PodMut, Shadow, ShadowView};
 pub use style::{
-    Align, AutoLength, Direction, FlexContainer, Justify, Layout, LayoutContainer, Length, Percent,
-    Position,
+    Align, AutoLength, BorderLayout, ContainerLayout, Direction, FlexLayout, Justify, Layout,
+    Length, Percent, Position,
 };
 pub use text::{Font, Stretch, TextSpan, Weight};
 

@@ -208,7 +208,7 @@ where
 
         shadow.set_font(cx, self.font.clone());
 
-        if let Some(text) = self.text {
+        if let Some(text) = self.text.clone() {
             shadow.set_text(cx, text);
         }
 
@@ -242,6 +242,7 @@ where
         let pod = Pod { node, shadow };
         let state = TextInputState {
             font: self.font,
+            text: self.text.unwrap_or_default(),
 
             placeholder_font: self.placeholder_font,
             placeholder_text: self.placeholder_text,
@@ -275,8 +276,9 @@ where
         }
 
         if let Some(text) = self.text
-            && text != element.shadow.get_text()
+            && text != state.text
         {
+            state.text = text.clone();
             element.shadow.set_text(cx, text);
             changed |= true;
         }
@@ -309,6 +311,7 @@ where
         }
 
         state.on_change = self.on_change;
+        state.on_submit = self.on_submit;
     }
 
     fn message(
@@ -320,7 +323,11 @@ where
     ) -> Action {
         if let Some(message) = message.take_targeted(state.view_id) {
             match message {
-                TextInputMessage::Change(text) => (state.on_change)(data, text),
+                TextInputMessage::Change(text) => {
+                    state.text = text.clone();
+                    (state.on_change)(data, text)
+                }
+
                 TextInputMessage::Submit(text) => (state.on_submit)(data, text),
             }
         } else {
@@ -338,6 +345,7 @@ where
 #[allow(clippy::type_complexity)]
 pub struct TextInputState<T> {
     font: Font,
+    text: String,
 
     placeholder_font: Font,
     placeholder_text: String,

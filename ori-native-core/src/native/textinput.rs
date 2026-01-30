@@ -13,8 +13,6 @@ where
     fn build(platform: &mut P) -> Self;
     fn teardown(self, platform: &mut P);
 
-    fn get_text(&self) -> String;
-
     fn set_on_change(&mut self, platform: &mut P, on_change: impl Fn(String) + 'static);
     fn set_on_submit(&mut self, platform: &mut P, on_submit: impl Fn(String) + 'static);
 
