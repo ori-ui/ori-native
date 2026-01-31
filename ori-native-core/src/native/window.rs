@@ -25,6 +25,7 @@ where
 
     fn set_min_size(&mut self, width: u32, height: u32);
     fn set_size(&mut self, width: u32, height: u32);
+    fn set_resizable(&mut self, resizable: bool);
 
     #[cfg(feature = "layer-shell")]
     fn build_layer_shell(

@@ -32,12 +32,26 @@ impl NativeWindow<Platform> for Window {
     where
         Self: Sized,
     {
-        use gtk4_layer_shell::{Edge, Layer, LayerShell};
+        use gdk4::prelude::DisplayExt;
+        use glib::object::Cast;
+        use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
         use ori_native_core::views;
 
         let window = ApplicationWindow::new(&platform.application);
         window.init_layer_shell();
         window.set_size_request(1, 1);
+
+        if let Some(index) = layer_shell.monitor
+            && let Some(Ok(monitor)) = platform.display.monitors().into_iter().nth(index as usize)
+        {
+            window.set_monitor(monitor.downcast_ref());
+        }
+
+        window.set_keyboard_mode(match layer_shell.keyboard {
+            views::KeyboardInput::Never => KeyboardMode::None,
+            views::KeyboardInput::Exclusive => KeyboardMode::Exclusive,
+            views::KeyboardInput::OnDemand => KeyboardMode::OnDemand,
+        });
 
         window.set_layer(match layer_shell.layer {
             views::Layer::Background => Layer::Background,
@@ -127,17 +141,14 @@ impl NativeWindow<Platform> for Window {
     }
 
     fn set_size(&mut self, width: u32, height: u32) {
-        #[cfg(feature = "layer-shell")]
-        {
-            use gtk4_layer_shell::LayerShell;
+        self.window.set_size_request(
+            width.max(1) as i32,
+            height.max(1) as i32,
+        );
+    }
 
-            if self.window.is_layer_window() {
-                self.window.set_size_request(
-                    width.max(1) as i32,
-                    height.max(1) as i32,
-                );
-            }
-        }
+    fn set_resizable(&mut self, resizable: bool) {
+        self.window.set_resizable(resizable);
     }
 
     fn start_animating(&mut self) {
