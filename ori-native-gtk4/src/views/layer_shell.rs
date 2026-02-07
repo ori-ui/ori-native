@@ -1,4 +1,3 @@
-use gdk4::prelude::DisplayExt;
 use glib::object::Cast;
 use gtk4::prelude::{GtkWindowExt, WidgetExt};
 use gtk4_layer_shell::{Edge, KeyboardMode, LayerShell as _};
