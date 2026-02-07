@@ -16,6 +16,12 @@ pub type Element = <Context as ori::Base>::Element;
 pub mod views {
     pub use ori::views::*;
     pub use ori_native_core::views::*;
+
+    #[cfg(feature = "layer-shell")]
+    pub use ori_native_gtk4::{ExclusiveZone, KeyboardInput, Layer, LayerShell, layer_shell};
+
+    #[cfg(feature = "session-lock")]
+    pub use ori_native_gtk4::{SessionLock, session_lock};
 }
 
 pub mod prelude {

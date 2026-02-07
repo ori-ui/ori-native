@@ -29,6 +29,7 @@ tracing = "0.1"
 
 [features]
 layer-shell = ["ori-native-gtk4/layer-shell"]
+session-lock = ["ori-native-gtk4/session-lock"]
 
 [dependencies]
 ori-native-core = { workspace = true }

@@ -7,6 +7,7 @@ license.workspace = true
 
 [features]
 layer-shell = ["dep:gtk4-layer-shell"]
+session-lock = ["dep:gtk4-session-lock"]
 
 [dependencies]
 ori-native-core = { workspace = true }
@@ -32,4 +33,9 @@ features = ["sync", "rt-multi-thread"]
 
 [dependencies.gtk4-layer-shell]
 version = "0.7.1"
+optional = true
+
+[dependencies.gtk4-session-lock]
+version = "0.3"
+features = ["v1_1"]
 optional = true
