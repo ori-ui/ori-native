@@ -49,8 +49,7 @@ where
 
         let window = Window::new(&cx.platform.application);
 
-        self.instance
-            .assign_window_to_monitor(&window, &self.monitor);
+        (self.instance).assign_window_to_monitor(&window, &self.monitor);
         window.set_size_request(1, 1);
 
         window.set_child(Some(contents.widget.widget()));
