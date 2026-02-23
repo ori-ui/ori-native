@@ -222,10 +222,7 @@ impl GroupWidget {
 mod imp {
     use std::cell::{Cell, RefCell};
 
-    use glib::subclass::{
-        object::ObjectImpl,
-        types::{ObjectSubclass, ObjectSubclassExt},
-    };
+    use glib::subclass::{object::ObjectImpl, types::ObjectSubclass};
     use gtk4::{
         prelude::{SnapshotExt, SnapshotExtManual, WidgetExt},
         subclass::widget::{WidgetClassExt, WidgetImpl, WidgetImplExt},
@@ -288,15 +285,14 @@ mod imp {
 
     impl WidgetImpl for GroupWidget {
         fn snapshot(&self, snapshot: &gtk4::Snapshot) {
-            let alloc = self.obj().allocation();
             let [tl, tr, br, bl] = self.corner_radii.get();
 
             let rect = gsk4::RoundedRect::new(
                 graphene::Rect::new(
                     0.0,
                     0.0,
-                    alloc.width() as f32,
-                    alloc.height() as f32,
+                    self.width.get() as f32,
+                    self.height.get() as f32,
                 ),
                 graphene::Size::new(tl, tl),
                 graphene::Size::new(tr, tr),

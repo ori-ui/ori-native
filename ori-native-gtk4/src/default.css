@@ -15,3 +15,7 @@ scrolledwindow scrollbar.horizontal slider {
 scrolledwindow scrollbar.vertical slider {
     min-height: 0;
 }
+
+window {
+    background: transparent;
+}
