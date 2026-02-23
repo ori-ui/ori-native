@@ -199,7 +199,7 @@ where
     ) {
         cx.with_window(self.view_id, |cx| {
             contents.rebuild(
-                self.contents.as_mut(self.contents.node),
+                self.contents.as_mut(self.contents.node, 0),
                 &mut self.state,
                 cx,
                 data,
@@ -274,7 +274,7 @@ where
 
         cx.with_window(self.view_id, |cx| {
             V::message(
-                self.contents.as_mut(self.node),
+                self.contents.as_mut(self.node, 0),
                 &mut self.state,
                 cx,
                 data,
@@ -295,7 +295,7 @@ where
 
                     cx.with_window(self.view_id, |cx| {
                         V::message(
-                            self.contents.as_mut(self.node),
+                            self.contents.as_mut(self.node, 0),
                             &mut self.state,
                             cx,
                             data,
@@ -346,7 +346,7 @@ where
 
         cx.with_window(self.view_id, |cx| {
             V::message(
-                self.contents.as_mut(self.node),
+                self.contents.as_mut(self.node, 0),
                 &mut self.state,
                 cx,
                 data,

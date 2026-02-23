@@ -152,6 +152,7 @@ where
         let view = (self.build)(data, state.press);
         let pod = PodMut {
             parent: element.parent,
+            index:  element.index,
             node:   element.node,
             widget: contents,
         };
@@ -176,6 +177,7 @@ where
 
         let pod = PodMut {
             parent: element.parent,
+            index:  element.index,
             node:   element.node,
             widget: contents,
         };

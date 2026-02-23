@@ -94,7 +94,7 @@ where
         element.widget.set_direction(self.direction);
 
         self.contents.rebuild(
-            contents.as_mut(*element.node),
+            contents.as_mut(*element.node, 0),
             state,
             cx,
             data,
@@ -115,7 +115,7 @@ where
         }
 
         V::message(
-            contents.as_mut(*element.node),
+            contents.as_mut(*element.node, 0),
             state,
             cx,
             data,

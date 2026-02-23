@@ -127,14 +127,14 @@ where
 {
     fn next(&mut self, _cx: &mut Context<P>) -> Option<Mut<'_, BoxedWidget<P>>> {
         let child = self.children.get_mut(self.index)?;
-        self.index += 1;
-
         let pod = PodMut {
             parent: self.node,
+            index:  self.index,
             node:   &mut child.node,
             widget: &mut child.widget,
         };
 
+        self.index += 1;
         Some(pod)
     }
 

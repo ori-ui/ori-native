@@ -1,5 +1,6 @@
 use std::{collections::HashMap, pin::Pin, sync::Arc};
 
+use gtk4::prelude::WidgetExt;
 use ori::{Message, Proxied, Proxy};
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -89,6 +90,13 @@ impl Platform {
 
 impl ori_native_core::Platform for Platform {
     type Widget = gtk4::Widget;
+
+    fn replace(&mut self, widget: &Self::Widget, other: &Self::Widget) {
+        if let Some(parent) = widget.parent() {
+            other.insert_after(&parent, Some(widget));
+            widget.unparent();
+        }
+    }
 
     fn quit(&mut self) {
         let _ = self.proxy.sender.send(Event::Quit);
