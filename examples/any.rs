@@ -15,7 +15,7 @@ fn ui(data: &Data) -> impl Effect<Data> + use<> {
         row(text("Toggle"))
             .background_color(Color::RED.fade(if !state.hovered { 0.6 } else { 0.7 }))
             .padding(8.0)
-            .corners(8.0)
+            .corner(8.0)
     })
     .on_press(|data: &mut Data| data.toggle = !data.toggle);
 

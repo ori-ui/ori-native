@@ -132,7 +132,7 @@ fn done(todo: &Todo) -> impl View<Todo> + use<> {
     row(icon)
         .size(28.0, 28.0)
         .border(1.0)
-        .corners(14.0)
+        .corner(14.0)
         .border_color(theme::BORDER)
         .justify_contents(Justify::Center)
         .align_items(Align::Center)
@@ -144,7 +144,7 @@ fn remove<T>(index: usize) -> impl View<T> {
 
         row(icon)
             .size(28.0, 28.0)
-            .corners(8.0)
+            .corner(8.0)
             .background_color(theme::DANGER)
             .justify_contents(Justify::Center)
             .align_items(Align::Center)
