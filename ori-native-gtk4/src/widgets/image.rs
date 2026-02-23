@@ -1,6 +1,6 @@
 use std::{borrow::Cow, io};
 
-use gdk4::prelude::PaintableExt;
+use gdk4::{gdk_pixbuf::prelude::PixbufLoaderExt, prelude::PaintableExt};
 use glib::subclass::types::ObjectSubclassIsExt;
 use librsvg::prelude::HandleExt;
 use ori_native_core::{
@@ -16,7 +16,7 @@ impl HasImage for Platform {
 
 pub struct Image {
     image: gtk4::Picture,
-    svg:   Option<Svg>,
+    svg:   Option<Paintable>,
     tint:  Option<Color>,
 }
 
@@ -46,7 +46,7 @@ impl NativeImage<Platform> for Image {
         _plaform: &mut Platform,
         data: Cow<'static, [u8]>,
     ) -> Result<impl LayoutLeaf<Platform>, Self::Error> {
-        let svg = Svg::new(&data)?;
+        let svg = Paintable::new(&data)?;
         svg.set_tint(self.tint);
         self.image.set_paintable(Some(&svg));
 
@@ -63,7 +63,7 @@ impl NativeImage<Platform> for Image {
 }
 
 struct Layout {
-    svg: Svg,
+    svg: Paintable,
 }
 
 impl LayoutLeaf<Platform> for Layout {
@@ -82,20 +82,53 @@ impl LayoutLeaf<Platform> for Layout {
     }
 }
 
+#[derive(Default)]
+enum Contents {
+    Svg(librsvg::Handle),
+    Texture(gdk4::Texture),
+    #[default]
+    None,
+}
+
 glib::wrapper! {
-    struct Svg(ObjectSubclass<imp::Svg>)
+    struct Paintable(ObjectSubclass<imp::Paintable>)
         @implements
             gdk4::Paintable;
 }
 
-impl Svg {
+impl Paintable {
     fn new(data: &[u8]) -> io::Result<Self> {
+        if data.starts_with(&[0x3c, 0x3f, 0x78, 0x6d, 0x6c]) {
+            Self::new_svg(data)
+        } else {
+            Self::new_texture(data)
+        }
+    }
+
+    fn new_texture(data: &[u8]) -> io::Result<Self> {
+        let loader = gdk4::gdk_pixbuf::PixbufLoader::new();
+        loader.write(data).map_err(io::Error::other)?;
+        loader.close().map_err(io::Error::other)?;
+
+        let pixbuf = loader
+            .pixbuf()
+            .ok_or_else(|| io::Error::other("no pixbuf"))?;
+
+        let texture = gdk4::Texture::for_pixbuf(&pixbuf);
+
+        let this: Self = glib::Object::builder().build();
+        this.imp().handle.replace(Contents::Texture(texture));
+
+        Ok(this)
+    }
+
+    fn new_svg(data: &[u8]) -> io::Result<Self> {
         let handle = librsvg::Handle::from_data(data)
             .map_err(io::Error::other)?
             .ok_or_else(|| io::Error::other("no handle"))?;
 
         let this: Self = glib::Object::builder().build();
-        this.imp().handle.replace(handle);
+        this.imp().handle.replace(Contents::Svg(handle));
 
         Ok(this)
     }
@@ -107,7 +140,16 @@ impl Svg {
     }
 
     fn intrinsic_size(&self) -> Option<(f64, f64)> {
-        self.imp().handle.borrow().intrinsic_size_in_pixels()
+        match *self.imp().handle.borrow() {
+            Contents::Svg(ref handle) => handle.intrinsic_size_in_pixels(),
+
+            Contents::Texture(ref texture) => Some((
+                texture.intrinsic_width() as f64,
+                texture.intrinsic_height() as f64,
+            )),
+
+            Contents::None => None,
+        }
     }
 }
 
@@ -120,24 +162,26 @@ mod imp {
     use librsvg::prelude::HandleExt;
     use ori_native_core::Color;
 
+    use super::Contents;
+
     #[derive(Default)]
-    pub(super) struct Svg {
-        pub(super) handle: RefCell<librsvg::Handle>,
+    pub(super) struct Paintable {
+        pub(super) handle: RefCell<Contents>,
         pub(super) tint:   Cell<Option<Color>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for Svg {
+    impl ObjectSubclass for Paintable {
         const NAME: &'static str = "OriSvg";
 
-        type Type = super::Svg;
+        type Type = super::Paintable;
         type ParentType = glib::Object;
         type Interfaces = (gdk4::Paintable,);
     }
 
-    impl ObjectImpl for Svg {}
+    impl ObjectImpl for Paintable {}
 
-    impl PaintableImpl for Svg {
+    impl PaintableImpl for Paintable {
         fn snapshot(&self, snapshot: &gdk4::Snapshot, width: f64, height: f64) {
             let cr = snapshot.append_cairo(&graphene::Rect::new(
                 0.0,
@@ -150,10 +194,19 @@ mod imp {
                 cr.push_group();
             }
 
-            let _ = self.handle.borrow().render_document(
-                &cr,
-                &librsvg::Rectangle::new(0.0, 0.0, width, height),
-            );
+            match *self.handle.borrow() {
+                Contents::Svg(ref handle) => {
+                    let bounds = librsvg::Rectangle::new(0.0, 0.0, width, height);
+                    let _ = handle.render_document(&cr, &bounds);
+                }
+
+                Contents::Texture(ref texture) => {
+                    let bounds = graphene::Rect::new(0.0, 0.0, width as f32, height as f32);
+                    snapshot.append_texture(texture, &bounds);
+                }
+
+                Contents::None => {}
+            }
 
             if let Some(tint) = self.tint.get()
                 && let Ok(mask) = cr.pop_group()
