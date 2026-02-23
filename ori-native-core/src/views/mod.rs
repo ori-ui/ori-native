@@ -8,7 +8,7 @@ mod textinput;
 mod transition;
 mod window;
 
-pub use animate::{Animate, AnimationFrame, animate};
+pub use animate::{Animate, animate};
 pub use flex::{Flex, column, row};
 pub use image::{Image, image};
 pub use pressable::{PressState, Pressable, pressable};
@@ -18,4 +18,4 @@ pub use textinput::{Newline, Submit, TextInput, textinput};
 pub use transition::{
     Back, BackIn, BackInOut, Ease, Elastic, ElasticIn, Lerp, Linear, Transition, transition,
 };
-pub use window::{Window, WindowMessage, WindowSizing, WindowState, window};
+pub use window::{Window, WindowMessage, WindowState, window};

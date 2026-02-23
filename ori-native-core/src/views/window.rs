@@ -3,9 +3,8 @@ use std::time::Duration;
 use ori::{Action, Message, Mut, Proxied, Proxy, View, ViewId, ViewMarker};
 
 use crate::{
-    Context, Lifecycle, NativeWidget, Pod, WidgetView,
+    Context, Lifecycle, NativeWidget, Pod, Sizing, WidgetView,
     native::{HasWindow, NativeWindow},
-    views::AnimationFrame,
 };
 
 pub fn window<V>(contents: V) -> Window<V> {
@@ -14,27 +13,21 @@ pub fn window<V>(contents: V) -> Window<V> {
 
 pub struct Window<V> {
     contents: V,
-    sizing:   WindowSizing,
+    sizing:   Sizing,
 }
 
 impl<V> Window<V> {
     pub fn new(contents: V) -> Self {
         Window {
             contents,
-            sizing: WindowSizing::User,
+            sizing: Sizing::User,
         }
     }
 
-    pub fn sizing(mut self, sizing: WindowSizing) -> Self {
+    pub fn sizing(mut self, sizing: Sizing) -> Self {
         self.sizing = sizing;
         self
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum WindowSizing {
-    User,
-    Content,
 }
 
 #[derive(Debug)]
@@ -115,7 +108,7 @@ where
     pub view_id: ViewId,
 
     node:   taffy::NodeId,
-    sizing: WindowSizing,
+    sizing: Sizing,
 
     width:  u32,
     height: u32,
@@ -135,11 +128,11 @@ where
         cx: &mut Context<P>,
         mut window: P::Window,
         view_id: ViewId,
-        sizing: WindowSizing,
+        sizing: Sizing,
         contents: Pod<P, V::Widget>,
         state: V::State,
     ) -> Self {
-        window.set_resizable(matches!(sizing, WindowSizing::User));
+        window.set_resizable(matches!(sizing, Sizing::User));
 
         window.set_on_resize({
             let proxy = cx.proxy();
@@ -190,13 +183,7 @@ where
         }
     }
 
-    pub fn rebuild(
-        &mut self,
-        cx: &mut Context<P>,
-        data: &mut T,
-        contents: V,
-        sizing: WindowSizing,
-    ) {
+    pub fn rebuild(&mut self, cx: &mut Context<P>, data: &mut T, contents: V, sizing: Sizing) {
         cx.with_window(self.view_id, |cx| {
             contents.rebuild(
                 (self.contents).as_mut(self.contents.node, &mut self.window, 0),
@@ -206,7 +193,7 @@ where
             );
         });
 
-        (self.window).set_resizable(matches!(sizing, WindowSizing::User));
+        (self.window).set_resizable(matches!(sizing, Sizing::User));
 
         self.sizing = sizing;
     }
@@ -217,7 +204,7 @@ where
         self.width = width;
         self.height = height;
 
-        if let WindowSizing::User = self.sizing {
+        if let Sizing::User = self.sizing {
             let style = taffy::Style {
                 max_size: taffy::Size::from_lengths(0.0, 0.0),
                 ..Default::default()
@@ -240,30 +227,30 @@ where
         }
 
         let style = match self.sizing {
-            WindowSizing::User => taffy::Style {
+            Sizing::User => taffy::Style {
                 size: taffy::Size::from_lengths(width as f32, height as f32),
                 ..Default::default()
             },
 
-            WindowSizing::Content => taffy::Style {
+            Sizing::Content => taffy::Style {
                 size: taffy::Size::auto(),
                 ..Default::default()
             },
         };
 
         let size = match self.sizing {
-            WindowSizing::User => taffy::Size {
+            Sizing::User => taffy::Size {
                 width:  taffy::AvailableSpace::Definite(width as f32),
                 height: taffy::AvailableSpace::Definite(height as f32),
             },
 
-            WindowSizing::Content => taffy::Size::max_content(),
+            Sizing::Content => taffy::Size::max_content(),
         };
 
         let _ = cx.set_layout_style(self.node, style);
         let _ = cx.compute_layout(self.node, size);
 
-        if let WindowSizing::Content = self.sizing
+        if let Sizing::Content = self.sizing
             && let Ok(layout) = cx.get_computed_layout(self.node)
         {
             self.window.set_size(
@@ -291,7 +278,7 @@ where
                         return Action::new();
                     }
 
-                    let mut message = Message::new(AnimationFrame(delta), None);
+                    let mut message = Message::new(Lifecycle::Animate(delta), None);
 
                     cx.with_window(self.view_id, |cx| {
                         V::message(

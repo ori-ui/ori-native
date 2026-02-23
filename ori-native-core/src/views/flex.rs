@@ -2,7 +2,7 @@ use ori::{Action, Message, Mut, View, ViewMarker, ViewSeq};
 
 use crate::{
     BorderLayout, BoxedWidget, Color, ContainerLayout, Context, Direction, FlexLayout, Layout,
-    Lifecycle, Pod,
+    Lifecycle, Overflow, Pod,
     native::{Group, HasGroup},
 };
 
@@ -20,6 +20,7 @@ pub struct Flex<V> {
     background_color: Color,
     border_color:     Color,
     corner_radii:     [f32; 4],
+    overflow:         Overflow,
 }
 
 impl<V> Flex<V> {
@@ -39,6 +40,7 @@ impl<V> Flex<V> {
             background_color: Color::TRANSPARENT,
             border_color: Color::TRANSPARENT,
             corner_radii: [0.0; 4],
+            overflow: Overflow::Hidden,
         }
     }
 
@@ -49,6 +51,11 @@ impl<V> Flex<V> {
 
     pub fn border_color(mut self, color: Color) -> Self {
         self.border_color = color;
+        self
+    }
+
+    pub fn overflow(mut self, overflow: Overflow) -> Self {
+        self.overflow = overflow;
         self
     }
 
@@ -116,6 +123,7 @@ where
         group.set_background_color(cx, self.background_color);
         group.set_border_color(cx, self.border_color);
         group.set_corner_radii(cx, self.corner_radii);
+        group.set_overflow(cx, self.overflow);
 
         let state = self.contents.seq_build(&mut group.elements(node), cx, data);
 
@@ -135,6 +143,7 @@ where
         (element.widget).set_background_color(cx, self.background_color);
         (element.widget).set_border_color(cx, self.border_color);
         (element.widget).set_corner_radii(cx, self.corner_radii);
+        (element.widget).set_overflow(cx, self.overflow);
 
         self.contents.seq_rebuild(
             &mut element.widget.elements(*element.node),

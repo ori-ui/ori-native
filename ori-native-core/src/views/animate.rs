@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use ori::{Action, Message, Mut, View, ViewMarker};
 
-use crate::{Context, Platform, WidgetView};
+use crate::{Context, Lifecycle, Platform, WidgetView};
 
 #[allow(clippy::type_complexity)]
 pub fn animate<P, T, U, V>(
@@ -35,8 +35,6 @@ impl<F, G, H, I> Animate<F, G, H, I> {
         }
     }
 }
-
-pub struct AnimationFrame(pub Duration);
 
 impl<F, G, H, I> ViewMarker for Animate<F, G, H, I> {}
 impl<P, T, F, G, H, I, U, V> View<Context<P>, T> for Animate<F, G, H, I>
@@ -106,7 +104,7 @@ where
         data: &mut T,
         message: &mut Message,
     ) -> Action {
-        if let Some(AnimationFrame(delta)) = message.get()
+        if let Some(Lifecycle::Animate(delta)) = message.get()
             && *is_animating
         {
             let should_animate = animate(state, *delta);

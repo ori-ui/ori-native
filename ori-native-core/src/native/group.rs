@@ -1,6 +1,8 @@
 use ori::{Elements, Mut};
 
-use crate::{BoxedWidget, Color, Context, NativeWidget, Platform, PodMut, element::NativeParent};
+use crate::{
+    BoxedWidget, Color, Context, NativeWidget, Overflow, Platform, PodMut, element::NativeParent,
+};
 
 pub trait HasGroup: Platform {
     type Group: NativeGroup<Self>;
@@ -27,6 +29,7 @@ where
     fn set_border_color(&mut self, platform: &mut P, color: Color);
     fn set_border_width(&mut self, platform: &mut P, width: [f32; 4]);
     fn set_corner_radii(&mut self, platform: &mut P, radii: [f32; 4]);
+    fn set_overflow(&mut self, platform: &mut P, overflow: Overflow);
 }
 
 pub struct Group<P>
@@ -71,6 +74,10 @@ where
 
     pub fn set_corner_radii(&mut self, cx: &mut Context<P>, radii: [f32; 4]) {
         self.group.set_corner_radii(&mut cx.platform, radii);
+    }
+
+    pub fn set_overflow(&mut self, cx: &mut Context<P>, overflow: Overflow) {
+        self.group.set_overflow(&mut cx.platform, overflow);
     }
 
     pub fn layout(&mut self, cx: &mut Context<P>, node: taffy::NodeId) {

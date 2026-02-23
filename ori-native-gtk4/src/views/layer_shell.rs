@@ -2,10 +2,7 @@ use glib::object::Cast;
 use gtk4::prelude::{GtkWindowExt, WidgetExt};
 use gtk4_layer_shell::{Edge, KeyboardMode, LayerShell as _};
 use ori::{Action, Message, Mut, View, ViewId, ViewMarker};
-use ori_native_core::{
-    Context, NativeWidget, WidgetView,
-    views::{WindowSizing, WindowState},
-};
+use ori_native_core::{Context, NativeWidget, Sizing, WidgetView, views::WindowState};
 
 use crate::{Platform, widgets::Window};
 
@@ -16,7 +13,7 @@ pub fn layer_shell<V>(contents: V) -> LayerShell<V> {
 #[derive(Debug)]
 pub struct LayerShell<V> {
     contents:       V,
-    sizing:         WindowSizing,
+    sizing:         Sizing,
     layer:          Layer,
     exclusive_zone: ExclusiveZone,
     monitor:        Option<gdk4::Monitor>,
@@ -35,7 +32,7 @@ impl<V> LayerShell<V> {
     pub fn new(contents: V) -> Self {
         Self {
             contents,
-            sizing: WindowSizing::User,
+            sizing: Sizing::User,
             layer: Layer::Top,
             exclusive_zone: ExclusiveZone::Auto,
             monitor: None,
@@ -51,7 +48,7 @@ impl<V> LayerShell<V> {
         }
     }
 
-    pub fn sizing(mut self, sizing: WindowSizing) -> Self {
+    pub fn sizing(mut self, sizing: Sizing) -> Self {
         self.sizing = sizing;
         self
     }

@@ -1,7 +1,7 @@
 use glib::subclass::types::ObjectSubclassIsExt;
 use gtk4::prelude::{AccessibleExt, WidgetExt};
 use ori_native_core::{
-    Color, NativeParent, NativeWidget,
+    Color, NativeParent, NativeWidget, Overflow,
     native::{HasGroup, NativeGroup},
 };
 
@@ -92,6 +92,13 @@ impl NativeGroup<Platform> for Group {
     fn set_corner_radii(&mut self, _platform: &mut Platform, radii: [f32; 4]) {
         self.group.set_corner_radii(radii);
     }
+
+    fn set_overflow(&mut self, _platform: &mut Platform, overflow: Overflow) {
+        self.group.set_overflow_visible(match overflow {
+            Overflow::Visible => true,
+            Overflow::Hidden => false,
+        });
+    }
 }
 
 glib::wrapper! {
@@ -142,6 +149,13 @@ impl GroupWidget {
     pub fn set_border_width(&self, border_width: [f32; 4]) {
         if self.imp().border_width.get() != border_width {
             self.imp().border_width.set(border_width);
+            self.queue_draw();
+        }
+    }
+
+    pub fn set_overflow_visible(&self, visible: bool) {
+        if self.imp().overflow_visible.get() != visible {
+            self.imp().overflow_visible.set(visible);
             self.queue_draw();
         }
     }
@@ -238,6 +252,7 @@ mod imp {
         pub(super) border_color:     Cell<gdk4::RGBA>,
         pub(super) corner_radii:     Cell<[f32; 4]>,
         pub(super) border_width:     Cell<[f32; 4]>,
+        pub(super) overflow_visible: Cell<bool>,
     }
 
     pub(super) struct Child {
@@ -260,6 +275,7 @@ mod imp {
                 border_color:     Cell::new(gdk4::RGBA::TRANSPARENT),
                 corner_radii:     Cell::new([0.0; 4]),
                 border_width:     Cell::new([0.0; 4]),
+                overflow_visible: Cell::new(true),
             }
         }
     }
@@ -313,9 +329,15 @@ mod imp {
                 &[self.border_color.get(); 4],
             );
 
+            if self.overflow_visible.get() {
+                snapshot.pop();
+            }
+
             self.parent_snapshot(snapshot);
 
-            snapshot.pop();
+            if !self.overflow_visible.get() {
+                snapshot.pop();
+            }
         }
 
         fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
