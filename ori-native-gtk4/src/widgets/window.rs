@@ -30,7 +30,9 @@ impl NativeWindow<Platform> for Window {
         window
     }
 
-    fn teardown(self, _platform: &mut Platform) {}
+    fn teardown(self, _platform: &mut Platform) {
+        self.destroy();
+    }
 
     fn get_size(&self) -> (u32, u32) {
         (
