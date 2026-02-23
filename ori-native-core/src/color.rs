@@ -711,7 +711,7 @@ impl Color {
         Self::okhsla(h, s, l - amount, alpha)
     }
 
-    pub fn fade(mut self, factor: f32) -> Self {
+    pub const fn fade(mut self, factor: f32) -> Self {
         self.a *= factor;
         self
     }
