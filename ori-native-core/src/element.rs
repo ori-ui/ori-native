@@ -1,5 +1,6 @@
 use std::{
     any::{Any, TypeId},
+    marker::PhantomData,
     mem,
 };
 
@@ -7,15 +8,33 @@ use ori::{Element, Is, Mut, View};
 
 use crate::{Context, Platform};
 
-pub struct Pod<T> {
+pub struct Pod<P, T> {
     pub node:   taffy::NodeId,
     pub widget: T,
+
+    marker: PhantomData<fn(&P)>,
 }
 
-impl<T> Pod<T> {
-    pub fn as_mut(&mut self, parent: taffy::NodeId, index: usize) -> PodMut<'_, T> {
+impl<P, T> Pod<P, T> {
+    pub fn new(node: taffy::NodeId, widget: T) -> Self {
+        Self {
+            node,
+            widget,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<P, T> Pod<P, T> {
+    pub fn as_mut<'a>(
+        &'a mut self,
+        parent_node: taffy::NodeId,
+        parent_widget: &'a mut dyn NativeParent<P>,
+        index: usize,
+    ) -> PodMut<'a, P, T> {
         PodMut {
-            parent,
+            parent_node,
+            parent_widget,
             index,
             node: &mut self.node,
             widget: &mut self.widget,
@@ -23,34 +42,37 @@ impl<T> Pod<T> {
     }
 }
 
-pub struct PodMut<'a, T> {
-    pub parent: taffy::NodeId,
+pub struct PodMut<'a, P, T> {
+    pub parent_node:   taffy::NodeId,
+    pub parent_widget: &'a mut dyn NativeParent<P>,
+
     pub index:  usize,
     pub node:   &'a mut taffy::NodeId,
     pub widget: &'a mut T,
 }
 
-impl<T> PodMut<'_, T> {
-    pub fn reborrow(&mut self) -> PodMut<'_, T> {
+impl<P, T> PodMut<'_, P, T> {
+    pub fn reborrow(&mut self) -> PodMut<'_, P, T> {
         PodMut {
-            parent: self.parent,
-            index:  self.index,
-            node:   self.node,
-            widget: self.widget,
+            parent_node:   self.parent_node,
+            parent_widget: self.parent_widget,
+            index:         self.index,
+            node:          self.node,
+            widget:        self.widget,
         }
     }
 }
 
-impl<T> Element for Pod<T> {
+impl<P, T> Element for Pod<P, T> {
     type Mut<'a>
-        = PodMut<'a, T>
+        = PodMut<'a, P, T>
     where
         Self: 'a;
 }
 
-pub type BoxedWidget<P> = Pod<Box<dyn NativeWidget<P>>>;
+pub type BoxedWidget<P> = Pod<P, Box<dyn NativeWidget<P>>>;
 
-pub trait WidgetView<P, T>: View<Context<P>, T, Element = Pod<Self::Widget>>
+pub trait WidgetView<P, T>: View<Context<P>, T, Element = Pod<P, Self::Widget>>
 where
     P: Platform,
 {
@@ -60,10 +82,17 @@ where
 impl<P, T, V, W> WidgetView<P, T> for V
 where
     P: Platform,
-    V: View<Context<P>, T, Element = Pod<W>>,
+    V: View<Context<P>, T, Element = Pod<P, W>>,
     W: NativeWidget<P>,
 {
     type Widget = W;
+}
+
+pub trait NativeParent<P>
+where
+    P: Platform,
+{
+    fn replace_child(&mut self, platform: &mut P, index: usize, child: &P::Widget);
 }
 
 pub trait NativeWidget<P>: Any
@@ -82,29 +111,39 @@ where
     }
 }
 
-impl<P, T> Is<Context<P>, BoxedWidget<P>> for Pod<T>
+impl<P, T> Is<Context<P>, BoxedWidget<P>> for Pod<P, T>
 where
     P: Platform,
     T: NativeWidget<P>,
 {
     fn replace(cx: &mut Context<P>, other: Mut<'_, BoxedWidget<P>>, this: Self) -> BoxedWidget<P> {
-        let _ = cx.replace_layout_child(other.parent, other.index, this.node);
+        let _ = cx.replace_layout_child(
+            other.parent_node,
+            other.index,
+            this.node,
+        );
 
-        cx.platform.replace(
-            other.widget.widget(),
+        other.parent_widget.replace_child(
+            &mut cx.platform,
+            other.index,
             this.widget.widget(),
         );
 
         let widget = mem::replace(other.widget, Box::new(this.widget));
         let node = mem::replace(other.node, this.node);
 
-        Pod { widget, node }
+        Pod {
+            widget,
+            node,
+            marker: PhantomData,
+        }
     }
 
     fn upcast(_cx: &mut Context<P>, this: Self) -> BoxedWidget<P> {
         Pod {
             node:   this.node,
             widget: Box::new(this.widget),
+            marker: PhantomData,
         }
     }
 
@@ -116,6 +155,7 @@ where
             Ok(Pod {
                 node:   this.node,
                 widget: shadow,
+                marker: PhantomData,
             })
         } else {
             Err(this)
@@ -130,7 +170,9 @@ where
                 .expect("type should be correct, as it was just checked");
 
             Ok(PodMut {
-                parent: this.parent,
+                parent_node:   this.parent_node,
+                parent_widget: this.parent_widget,
+
                 index:  this.index,
                 node:   this.node,
                 widget: shadow,

@@ -1,7 +1,7 @@
 use glib::subclass::types::ObjectSubclassIsExt;
 use gtk4::prelude::{AccessibleExt, WidgetExt};
 use ori_native_core::{
-    Color, NativeWidget,
+    Color, NativeParent, NativeWidget,
     native::{HasGroup, NativeGroup},
 };
 
@@ -19,6 +19,12 @@ pub struct Group {
 impl NativeWidget<Platform> for Group {
     fn widget(&self) -> &gtk4::Widget {
         self.group.as_ref()
+    }
+}
+
+impl NativeParent<Platform> for Group {
+    fn replace_child(&mut self, _platform: &mut Platform, index: usize, child: &gtk4::Widget) {
+        self.group.replace_child(index, child);
     }
 }
 
@@ -166,8 +172,36 @@ impl GroupWidget {
         child.widget.unparent();
     }
 
-    pub fn swap_children(&self, _a: usize, _b: usize) {
-        todo!()
+    pub fn replace_child(&self, index: usize, child: &gtk4::Widget) {
+        let mut children = self.imp().children.borrow_mut();
+
+        if let Some(current) = children.get_mut(index) {
+            child.insert_after(self, Some(&current.widget));
+            current.widget.unparent();
+            current.widget = child.clone();
+        }
+    }
+
+    pub fn swap_children(&self, a: usize, b: usize) {
+        let mut children = self.imp().children.borrow_mut();
+
+        let first = usize::min(a, b);
+        let last = usize::max(a, b);
+
+        // get the child after the last one
+        let after = children.get(last + 1).map(|child| &child.widget);
+
+        // move the last child after the first
+        children[last].widget.insert_after(
+            self,
+            children.get(first).map(|child| &child.widget),
+        );
+
+        // move the first child, before the child after the last
+        children[first].widget.insert_before(self, after);
+
+        // swap in the array
+        children.swap(a, b);
     }
 
     pub fn set_child_layout(&self, index: usize, x: i32, y: i32, width: i32, height: i32) {

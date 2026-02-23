@@ -11,9 +11,9 @@ struct Data {
 }
 
 fn ui(data: &Data) -> impl Effect<Data> + use<> {
-    let toggle = pressable(|_, _| {
+    let toggle = pressable(|_, state| {
         row(text("Toggle"))
-            .background_color(Color::RED.fade(0.6))
+            .background_color(Color::RED.fade(if !state.hovered { 0.6 } else { 0.7 }))
             .padding(8.0)
             .corners(8.0)
     })

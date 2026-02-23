@@ -79,7 +79,7 @@ impl<P, T> View<Context<P>, T> for Text
 where
     P: HasText,
 {
-    type Element = Pod<P::Text>;
+    type Element = Pod<P, P::Text>;
     type State = (Font, String);
 
     fn build(self, cx: &mut Context<P>, _data: &mut T) -> (Self::Element, Self::State) {
@@ -96,7 +96,7 @@ where
 
         let node = cx.new_layout_leaf(self.layout, leaf);
 
-        let pod = Pod { node, widget };
+        let pod = Pod::new(node, widget);
 
         (pod, (self.font, self.text))
     }

@@ -122,7 +122,7 @@ where
 
     animating: u32,
 
-    contents: Pod<V::Widget>,
+    contents: Pod<P, V::Widget>,
     state:    V::State,
 }
 
@@ -136,7 +136,7 @@ where
         mut window: P::Window,
         view_id: ViewId,
         sizing: WindowSizing,
-        contents: Pod<V::Widget>,
+        contents: Pod<P, V::Widget>,
         state: V::State,
     ) -> Self {
         window.set_resizable(matches!(sizing, WindowSizing::User));
@@ -199,7 +199,7 @@ where
     ) {
         cx.with_window(self.view_id, |cx| {
             contents.rebuild(
-                self.contents.as_mut(self.contents.node, 0),
+                (self.contents).as_mut(self.contents.node, &mut self.window, 0),
                 &mut self.state,
                 cx,
                 data,
@@ -274,7 +274,7 @@ where
 
         cx.with_window(self.view_id, |cx| {
             V::message(
-                self.contents.as_mut(self.node, 0),
+                self.contents.as_mut(self.node, &mut self.window, 0),
                 &mut self.state,
                 cx,
                 data,
@@ -295,7 +295,7 @@ where
 
                     cx.with_window(self.view_id, |cx| {
                         V::message(
-                            self.contents.as_mut(self.node, 0),
+                            self.contents.as_mut(self.node, &mut self.window, 0),
                             &mut self.state,
                             cx,
                             data,
@@ -346,7 +346,7 @@ where
 
         cx.with_window(self.view_id, |cx| {
             V::message(
-                self.contents.as_mut(self.node, 0),
+                self.contents.as_mut(self.node, &mut self.window, 0),
                 &mut self.state,
                 cx,
                 data,

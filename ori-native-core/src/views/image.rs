@@ -43,7 +43,7 @@ impl<P, T> View<Context<P>, T> for Image
 where
     P: HasImage,
 {
-    type Element = Pod<P::Image>;
+    type Element = Pod<P, P::Image>;
     type State = ();
 
     fn build(self, cx: &mut Context<P>, _data: &mut T) -> (Self::Element, Self::State) {
@@ -53,8 +53,7 @@ where
         let layout = widget.load_data(&mut cx.platform, self.data).unwrap();
 
         let node = cx.new_layout_leaf(self.style, layout);
-
-        let pod = Pod { node, widget };
+        let pod = Pod::new(node, widget);
 
         (pod, ())
     }

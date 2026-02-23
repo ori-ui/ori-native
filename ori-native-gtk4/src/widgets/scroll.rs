@@ -1,6 +1,6 @@
 use gtk4::prelude::WidgetExt;
 use ori_native_core::{
-    Direction, NativeWidget,
+    Direction, NativeParent, NativeWidget,
     native::{HasScroll, NativeScroll},
 };
 
@@ -17,6 +17,14 @@ pub struct Scroll {
 impl NativeWidget<Platform> for Scroll {
     fn widget(&self) -> &gtk4::Widget {
         self.scroll.as_ref()
+    }
+}
+
+impl NativeParent<Platform> for Scroll {
+    fn replace_child(&mut self, _platform: &mut Platform, index: usize, child: &gtk4::Widget) {
+        debug_assert_eq!(index, 0);
+
+        self.scroll.set_child(Some(child));
     }
 }
 

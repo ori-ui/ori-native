@@ -1,12 +1,12 @@
 use std::time::Duration;
 
-use crate::Platform;
+use crate::{Platform, element::NativeParent};
 
 pub trait HasWindow: Platform {
     type Window: NativeWindow<Self>;
 }
 
-pub trait NativeWindow<P>
+pub trait NativeWindow<P>: NativeParent<P>
 where
     P: Platform,
 {

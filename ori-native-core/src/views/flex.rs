@@ -106,25 +106,20 @@ where
     P: HasGroup,
     V: ViewSeq<Context<P>, T, BoxedWidget<P>>,
 {
-    type Element = Pod<Group<P>>;
+    type Element = Pod<P, Group<P>>;
     type State = V::State;
 
     fn build(self, cx: &mut Context<P>, data: &mut T) -> (Self::Element, Self::State) {
         let node = cx.new_layout_node(self.layout, &[]);
 
-        let mut shadow = Group::new(cx);
-        shadow.set_background_color(cx, self.background_color);
-        shadow.set_border_color(cx, self.border_color);
-        shadow.set_corner_radii(cx, self.corner_radii);
+        let mut group = Group::new(cx);
+        group.set_background_color(cx, self.background_color);
+        group.set_border_color(cx, self.border_color);
+        group.set_corner_radii(cx, self.corner_radii);
 
-        let state = self
-            .contents
-            .seq_build(&mut shadow.elements(node), cx, data);
+        let state = self.contents.seq_build(&mut group.elements(node), cx, data);
 
-        let pod = Pod {
-            node,
-            widget: shadow,
-        };
+        let pod = Pod::new(node, group);
 
         (pod, state)
     }

@@ -71,7 +71,7 @@ where
     P: HasPressable + Proxied,
     V: WidgetView<P, T>,
 {
-    type Element = Pod<P::Pressable>;
+    type Element = Pod<P, P::Pressable>;
     type State = (V::Widget, PressableState<P, T, V>);
 
     fn build(mut self, cx: &mut Context<P>, data: &mut T) -> (Self::Element, Self::State) {
@@ -124,10 +124,7 @@ where
             }
         });
 
-        let pod = Pod {
-            node: contents.node,
-            widget,
-        };
+        let pod = Pod::new(contents.node, widget);
 
         let state = PressableState {
             press,
@@ -151,7 +148,9 @@ where
     ) {
         let view = (self.build)(data, state.press);
         let pod = PodMut {
-            parent: element.parent,
+            parent_node:   element.parent_node,
+            parent_widget: element.parent_widget,
+
             index:  element.index,
             node:   element.node,
             widget: contents,
@@ -176,7 +175,9 @@ where
         }
 
         let pod = PodMut {
-            parent: element.parent,
+            parent_node:   element.parent_node,
+            parent_widget: element.parent_widget,
+
             index:  element.index,
             node:   element.node,
             widget: contents,
@@ -215,10 +216,7 @@ where
     }
 
     fn teardown(element: Self::Element, (contents, state): Self::State, cx: &mut Context<P>) {
-        let pod = Pod {
-            node:   element.node,
-            widget: contents,
-        };
+        let pod = Pod::new(element.node, contents);
 
         V::teardown(pod, state.state, cx);
         element.widget.teardown(&mut cx.platform);

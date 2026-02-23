@@ -200,7 +200,7 @@ where
     P: HasTextInput + Proxied,
     T: 'static,
 {
-    type Element = Pod<P::TextInput>;
+    type Element = Pod<P, P::TextInput>;
     type State = TextInputState<T>;
 
     fn build(self, cx: &mut Context<P>, _data: &mut T) -> (Self::Element, Self::State) {
@@ -245,7 +245,7 @@ where
             ));
         });
 
-        let pod = Pod { node, widget };
+        let pod = Pod::new(node, widget);
         let state = TextInputState {
             font: self.font,
             text: self.text.unwrap_or_default(),

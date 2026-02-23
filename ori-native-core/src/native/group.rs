@@ -1,12 +1,12 @@
 use ori::{Elements, Mut};
 
-use crate::{BoxedWidget, Color, Context, NativeWidget, Platform, PodMut};
+use crate::{BoxedWidget, Color, Context, NativeWidget, Platform, PodMut, element::NativeParent};
 
 pub trait HasGroup: Platform {
     type Group: NativeGroup<Self>;
 }
 
-pub trait NativeGroup<P>: NativeWidget<P>
+pub trait NativeGroup<P>: NativeWidget<P> + NativeParent<P>
 where
     P: Platform,
 {
@@ -128,7 +128,9 @@ where
     fn next(&mut self, _cx: &mut Context<P>) -> Option<Mut<'_, BoxedWidget<P>>> {
         let child = self.children.get_mut(self.index)?;
         let pod = PodMut {
-            parent: self.node,
+            parent_node:   self.node,
+            parent_widget: self.group,
+
             index:  self.index,
             node:   &mut child.node,
             widget: &mut child.widget,

@@ -1,10 +1,10 @@
-use crate::{Direction, NativeWidget, Platform};
+use crate::{Direction, NativeWidget, Platform, element::NativeParent};
 
 pub trait HasScroll: Platform {
     type Scroll: NativeScroll<Self>;
 }
 
-pub trait NativeScroll<P>: NativeWidget<P>
+pub trait NativeScroll<P>: NativeWidget<P> + NativeParent<P>
 where
     P: Platform,
 {

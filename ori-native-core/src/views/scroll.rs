@@ -64,7 +64,7 @@ where
     P: HasScroll,
     V: WidgetView<P, T>,
 {
-    type Element = Pod<P::Scroll>;
+    type Element = Pod<P, P::Scroll>;
     type State = (V::Element, V::State);
 
     fn build(self, cx: &mut Context<P>, data: &mut T) -> (Self::Element, Self::State) {
@@ -78,7 +78,7 @@ where
 
         widget.set_direction(self.direction);
 
-        let pod = Pod { node, widget };
+        let pod = Pod::new(node, widget);
 
         (pod, (contents, state))
     }
@@ -94,7 +94,7 @@ where
         element.widget.set_direction(self.direction);
 
         self.contents.rebuild(
-            contents.as_mut(*element.node, 0),
+            contents.as_mut(*element.node, element.widget, 0),
             state,
             cx,
             data,
@@ -115,7 +115,7 @@ where
         }
 
         V::message(
-            contents.as_mut(*element.node, 0),
+            contents.as_mut(*element.node, element.widget, 0),
             state,
             cx,
             data,
