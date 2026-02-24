@@ -66,6 +66,13 @@ where
         _data: &mut T,
     ) {
         let _ = cx.set_layout_style(*element.node, self.style);
+
+        let layout = element
+            .widget
+            .load_data(&mut cx.platform, self.data)
+            .unwrap();
+
+        cx.set_leaf_layout(*element.node, layout).unwrap();
     }
 
     fn message(

@@ -1,6 +1,6 @@
 use gtk4::prelude::{TextBufferExt, TextBufferExtManual, TextTagExt, TextViewExt, WidgetExt};
 use ori_native_core::{
-    Font, LayoutLeaf, NativeWidget, Stretch, TextSpan, Weight,
+    Font, LayoutLeaf, NativeWidget, Stretch, TextSpan, Weight, Wrap,
     native::{HasText, NativeText},
 };
 
@@ -27,6 +27,7 @@ impl NativeText<Platform> for Text {
         _platform: &mut Platform,
         spans: Box<[TextSpan]>,
         text: String,
+        wrap: Wrap,
     ) -> (Self, Self::Layout) {
         let view = gtk4::TextView::new();
         view.set_editable(false);
@@ -34,14 +35,20 @@ impl NativeText<Platform> for Text {
         view.set_sensitive(false);
 
         let mut this = Self { view };
-        let leaf = this.set_text(spans, text);
+        let leaf = this.set_text(spans, text, wrap);
 
         (this, leaf)
     }
 
     fn teardown(self, _platform: &mut Platform) {}
 
-    fn set_text(&mut self, spans: Box<[TextSpan]>, text: String) -> Self::Layout {
+    fn set_text(&mut self, spans: Box<[TextSpan]>, text: String, wrap: Wrap) -> Self::Layout {
+        match wrap {
+            Wrap::Word => self.view.set_wrap_mode(gtk4::WrapMode::Word),
+            Wrap::Char => self.view.set_wrap_mode(gtk4::WrapMode::Char),
+            Wrap::None => self.view.set_wrap_mode(gtk4::WrapMode::None),
+        }
+
         let buffer = self.view.buffer();
         buffer.set_text("");
 
@@ -60,6 +67,7 @@ impl NativeText<Platform> for Text {
             view: self.view.clone(),
             spans,
             text,
+            wrap,
         }
     }
 }
@@ -68,14 +76,15 @@ pub struct TextLayout {
     view:  gtk4::TextView,
     spans: Box<[TextSpan]>,
     text:  String,
+    wrap:  Wrap,
 }
 
 impl LayoutLeaf<Platform> for TextLayout {
     fn measure(
         &mut self,
         _platform: &mut Platform,
-        _known_size: taffy::Size<Option<f32>>,
-        _available_space: taffy::Size<taffy::AvailableSpace>,
+        known_size: taffy::Size<Option<f32>>,
+        available_space: taffy::Size<taffy::AvailableSpace>,
     ) -> taffy::Size<f32> {
         let context = self.view.pango_context();
         let layout = pango::Layout::new(&context);
@@ -101,10 +110,26 @@ impl LayoutLeaf<Platform> for TextLayout {
 
         layout.set_attributes(Some(&attrs));
 
+        match self.wrap {
+            Wrap::Word => layout.set_wrap(pango::WrapMode::Word),
+            Wrap::Char => layout.set_wrap(pango::WrapMode::Char),
+            Wrap::None => {}
+        }
+
+        if !matches!(self.wrap, Wrap::None) {
+            match available_space.width {
+                taffy::AvailableSpace::MinContent => layout.set_width(0),
+                taffy::AvailableSpace::MaxContent => layout.set_width(-1),
+                taffy::AvailableSpace::Definite(width) => {
+                    layout.set_width((width * pango::SCALE as f32).round() as i32);
+                }
+            }
+        }
+
         let (width, height) = layout.pixel_size();
 
         taffy::Size {
-            width:  width as f32,
+            width:  known_size.width.unwrap_or(width as f32),
             height: min_height.max(height as f32),
         }
     }

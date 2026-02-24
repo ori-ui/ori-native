@@ -1,4 +1,4 @@
-use crate::{LayoutLeaf, NativeWidget, Platform, TextSpan};
+use crate::{LayoutLeaf, NativeWidget, Platform, TextSpan, Wrap};
 
 pub trait HasText: Platform {
     type Text: NativeText<Self>;
@@ -10,8 +10,14 @@ where
 {
     type Layout: LayoutLeaf<P>;
 
-    fn build(platform: &mut P, spans: Box<[TextSpan]>, text: String) -> (Self, Self::Layout);
+    fn build(
+        platform: &mut P,
+        spans: Box<[TextSpan]>,
+        text: String,
+        wrap: Wrap,
+    ) -> (Self, Self::Layout);
+
     fn teardown(self, platform: &mut P);
 
-    fn set_text(&mut self, spans: Box<[TextSpan]>, text: String) -> Self::Layout;
+    fn set_text(&mut self, spans: Box<[TextSpan]>, text: String, wrap: Wrap) -> Self::Layout;
 }

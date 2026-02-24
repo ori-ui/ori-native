@@ -16,6 +16,6 @@ pub use style::{
     Align, AutoLength, BorderLayout, Color, ContainerLayout, Direction, FlexLayout, Fraction,
     Justify, Layout, Length, Overflow, Position, Sizing,
 };
-pub use text::{Font, Stretch, TextSpan, Weight};
+pub use text::{Font, Stretch, TextSpan, Weight, Wrap};
 
 pub use taffy::{NodeId, Size};

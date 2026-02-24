@@ -55,6 +55,13 @@ pub enum Stretch {
     UltraExpanded,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Wrap {
+    Word,
+    Char,
+    None,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextSpan {
     pub font:  Font,

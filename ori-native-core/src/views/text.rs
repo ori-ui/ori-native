@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use ori::{Action, Message, Mut, View, ViewMarker};
 
 use crate::{
-    Color, Context, Font, Layout, Pod, Stretch, TextSpan, Weight,
+    Color, Context, Font, Layout, Pod, Stretch, TextSpan, Weight, Wrap,
     native::{HasText, NativeText},
 };
 
@@ -15,6 +15,7 @@ pub struct Text {
     layout: taffy::Style,
     font:   Font,
     text:   String,
+    wrap:   Wrap,
 }
 
 impl Text {
@@ -29,6 +30,7 @@ impl Text {
             },
             font:   Default::default(),
             text:   text.into(),
+            wrap:   Wrap::None,
         }
     }
 
@@ -62,6 +64,11 @@ impl Text {
         self
     }
 
+    pub fn wrap(mut self, wrap: Wrap) -> Self {
+        self.wrap = wrap;
+        self
+    }
+
     pub fn color(mut self, color: Color) -> Self {
         self.font.color = color;
         self
@@ -92,6 +99,7 @@ where
             &mut cx.platform,
             spans.into(),
             self.text.clone(),
+            self.wrap,
         );
 
         let node = cx.new_layout_leaf(self.layout, leaf);
@@ -122,7 +130,7 @@ where
             range: 0..self.text.len(),
         }];
 
-        let leaf = element.widget.set_text(spans.into(), self.text);
+        let leaf = element.widget.set_text(spans.into(), self.text, self.wrap);
         let _ = cx.set_leaf_layout(*element.node, leaf);
     }
 

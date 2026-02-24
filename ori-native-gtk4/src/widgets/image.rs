@@ -46,11 +46,11 @@ impl NativeImage<Platform> for Image {
         _plaform: &mut Platform,
         data: Cow<'static, [u8]>,
     ) -> Result<impl LayoutLeaf<Platform>, Self::Error> {
-        let svg = Paintable::new(&data)?;
-        svg.set_tint(self.tint);
-        self.image.set_paintable(Some(&svg));
+        let paintable = Paintable::new(&data)?;
+        paintable.set_tint(self.tint);
+        self.image.set_paintable(Some(&paintable));
 
-        Ok(Layout { svg })
+        Ok(Layout { paintable })
     }
 
     fn set_tint(&mut self, tint: Option<Color>) {
@@ -63,21 +63,21 @@ impl NativeImage<Platform> for Image {
 }
 
 struct Layout {
-    svg: Paintable,
+    paintable: Paintable,
 }
 
 impl LayoutLeaf<Platform> for Layout {
     fn measure(
         &mut self,
         _platform: &mut Platform,
-        _known_size: taffy::Size<Option<f32>>,
+        known_size: taffy::Size<Option<f32>>,
         _available_space: taffy::Size<taffy::AvailableSpace>,
     ) -> taffy::Size<f32> {
-        let (width, height) = self.svg.intrinsic_size().unwrap_or((0.0, 0.0));
+        let (width, height) = self.paintable.intrinsic_size().unwrap_or((0.0, 0.0));
 
         taffy::Size {
-            width:  width as f32,
-            height: height as f32,
+            width:  known_size.width.unwrap_or(width as f32),
+            height: known_size.height.unwrap_or(height as f32),
         }
     }
 }

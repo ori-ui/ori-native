@@ -35,6 +35,10 @@ impl<V> Flex<V> {
             layout: taffy::Style {
                 display: taffy::Display::Flex,
                 flex_direction,
+                overflow: taffy::Point {
+                    x: taffy::Overflow::Hidden,
+                    y: taffy::Overflow::Hidden,
+                },
                 ..Default::default()
             },
             background_color: Color::TRANSPARENT,
@@ -55,7 +59,14 @@ impl<V> Flex<V> {
     }
 
     pub fn overflow(mut self, overflow: Overflow) -> Self {
+        let taffy = match overflow {
+            Overflow::Visible => taffy::Overflow::Visible,
+            Overflow::Hidden => taffy::Overflow::Hidden,
+        };
+
         self.overflow = overflow;
+        self.layout.overflow.x = taffy;
+        self.layout.overflow.y = taffy;
         self
     }
 
