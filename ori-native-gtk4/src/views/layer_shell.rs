@@ -146,7 +146,7 @@ where
     fn build(self, cx: &mut Context<Platform>, data: &mut T) -> (Self::Element, Self::State) {
         let window = Window::new(&cx.platform.application);
         window.init_layer_shell();
-        window.set_size_request(1, 1);
+        window.set_default_size(1, 1);
 
         if let Some(monitor) = self.monitor {
             window.set_monitor(monitor.downcast_ref());

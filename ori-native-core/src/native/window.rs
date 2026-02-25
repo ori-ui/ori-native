@@ -15,6 +15,7 @@ where
     fn teardown(self, platform: &mut P);
 
     fn get_size(&self) -> (u32, u32);
+    fn get_min_size(&self) -> (Option<u32>, Option<u32>);
 
     fn set_on_animation_frame(&mut self, on_frame: impl Fn(Duration) + 'static);
     fn set_on_resize(&mut self, on_resize: impl Fn() + 'static);

@@ -41,6 +41,28 @@ impl NativeWindow<Platform> for Window {
         )
     }
 
+    fn get_min_size(&self) -> (Option<u32>, Option<u32>) {
+        #[allow(unused_mut)]
+        let mut min_width = None;
+        #[allow(unused_mut)]
+        let mut min_height = None;
+
+        #[cfg(feature = "layer-shell")]
+        {
+            use gtk4_layer_shell::{Edge, LayerShell};
+
+            if self.is_anchor(Edge::Left) && self.is_anchor(Edge::Right) {
+                min_width = Some(self.width() as u32);
+            }
+
+            if self.is_anchor(Edge::Top) && self.is_anchor(Edge::Bottom) {
+                min_height = Some(self.height() as u32);
+            }
+        }
+
+        (min_width, min_height)
+    }
+
     fn set_on_animation_frame(&mut self, on_frame: impl Fn(Duration) + 'static) {
         if let Some(frame_clock) = self.frame_clock() {
             let previous = self.imp().previous_frame.clone();
@@ -84,10 +106,26 @@ impl NativeWindow<Platform> for Window {
     }
 
     fn set_size(&mut self, width: u32, height: u32) {
-        self.set_size_request(
+        self.set_default_size(
             width.max(1) as i32,
             height.max(1) as i32,
         );
+
+        #[cfg(feature = "layer-shell")]
+        {
+            use gtk4_layer_shell::{Edge, LayerShell};
+
+            // if we're a layer shell, we must stretch outselves when two opposing anchors are
+            // attached.
+
+            if self.is_anchor(Edge::Left) && self.is_anchor(Edge::Right) {
+                self.set_default_width(i32::MAX);
+            }
+
+            if self.is_anchor(Edge::Top) && self.is_anchor(Edge::Bottom) {
+                self.set_default_height(i32::MAX);
+            }
+        }
     }
 
     fn set_resizable(&mut self, resizable: bool) {

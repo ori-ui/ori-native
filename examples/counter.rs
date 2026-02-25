@@ -28,6 +28,7 @@ fn ui(data: &Data) -> impl Effect<Data> + use<> {
         .flex(1.0)
         .gap(20.0)
         .justify_contents(Justify::Center)
-        .align_items(Align::Center),
+        .align_items(Align::Center)
+        .background_color(Color::WHITE),
     )
 }
