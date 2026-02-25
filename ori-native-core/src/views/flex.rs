@@ -35,16 +35,12 @@ impl<V> Flex<V> {
             layout: taffy::Style {
                 display: taffy::Display::Flex,
                 flex_direction,
-                overflow: taffy::Point {
-                    x: taffy::Overflow::Hidden,
-                    y: taffy::Overflow::Hidden,
-                },
                 ..Default::default()
             },
             background_color: Color::TRANSPARENT,
             border_color: Color::TRANSPARENT,
             corner_radii: [0.0; 4],
-            overflow: Overflow::Hidden,
+            overflow: Overflow::Visible,
         }
     }
 
