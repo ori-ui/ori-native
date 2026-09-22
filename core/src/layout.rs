@@ -209,8 +209,8 @@ impl<P> LayoutTree<P> {
             },
 
             content_size: Size {
-                width:  layout.content_size.width,
-                height: layout.content_size.height,
+                width:  layout.content_box_width(),
+                height: layout.content_box_height(),
             },
 
             margin: Sides {
@@ -248,27 +248,34 @@ impl<P> LayoutTree<P> {
                 width:  Self::into_available_space(space.width),
                 height: Self::into_available_space(space.height),
             },
-            |known_size, space, _node, context, _style| match context {
-                Some(leaf) => {
-                    let size = leaf.measure(
-                        platform,
-                        Size {
-                            width:  known_size.width,
-                            height: known_size.height,
-                        },
-                        Size {
-                            width:  Self::from_available_space(space.width),
-                            height: Self::from_available_space(space.height),
-                        },
-                    );
+            |input, _node, context, style| {
+                taffy::compute_leaf_layout(
+                    input,
+                    style,
+                    |_, _| 0.0,
+                    |known_size, available_space| match context {
+                        Some(leaf) => {
+                            let size = leaf.measure(
+                                platform,
+                                Size {
+                                    width:  known_size.width,
+                                    height: known_size.height,
+                                },
+                                Size {
+                                    width:  Self::from_available_space(available_space.width),
+                                    height: Self::from_available_space(available_space.height),
+                                },
+                            );
 
-                    taffy::Size {
-                        width:  size.width,
-                        height: size.height,
-                    }
-                }
+                            taffy::Size {
+                                width:  size.width,
+                                height: size.height,
+                            }
+                        }
 
-                None => taffy::Size::ZERO,
+                        None => taffy::Size::ZERO,
+                    },
+                )
             },
         );
     }
@@ -403,13 +410,13 @@ impl<P> LayoutTree<P> {
         };
 
         layout.min_size = taffy::Size {
-            width:  Self::into_dimension(style.min_size.width),
-            height: Self::into_dimension(style.min_size.height),
+            width:  Self::into_length_auto(style.min_size.width),
+            height: Self::into_length_auto(style.min_size.height),
         };
 
         layout.max_size = taffy::Size {
-            width:  Self::into_dimension(style.max_size.width),
-            height: Self::into_dimension(style.max_size.height),
+            width:  Self::into_length_auto(style.max_size.width),
+            height: Self::into_length_auto(style.max_size.height),
         };
 
         self.request_layout(node);
@@ -560,23 +567,23 @@ impl<P> LayoutTree<P> {
 
     fn into_align(align: Align) -> taffy::AlignItems {
         match align {
-            Align::Start => taffy::AlignItems::Start,
-            Align::Center => taffy::AlignItems::Center,
-            Align::End => taffy::AlignItems::End,
-            Align::Baseline => taffy::AlignItems::Baseline,
-            Align::Stretch => taffy::AlignItems::Stretch,
+            Align::Start => taffy::AlignItems::START,
+            Align::Center => taffy::AlignItems::CENTER,
+            Align::End => taffy::AlignItems::END,
+            Align::Baseline => taffy::AlignItems::BASELINE,
+            Align::Stretch => taffy::AlignItems::STRETCH,
         }
     }
 
     fn into_justify(justify: Justify) -> taffy::AlignContent {
         match justify {
-            Justify::Start => taffy::AlignContent::Start,
-            Justify::Center => taffy::AlignContent::Center,
-            Justify::End => taffy::AlignContent::End,
-            Justify::Stretch => taffy::AlignContent::Stretch,
-            Justify::SpaceBetween => taffy::AlignContent::SpaceBetween,
-            Justify::SpaceEvenly => taffy::AlignContent::SpaceEvenly,
-            Justify::SpaceAround => taffy::AlignContent::SpaceAround,
+            Justify::Start => taffy::AlignContent::START,
+            Justify::Center => taffy::AlignContent::CENTER,
+            Justify::End => taffy::AlignContent::END,
+            Justify::Stretch => taffy::AlignContent::STRETCH,
+            Justify::SpaceBetween => taffy::AlignContent::SPACE_BETWEEN,
+            Justify::SpaceEvenly => taffy::AlignContent::SPACE_EVENLY,
+            Justify::SpaceAround => taffy::AlignContent::SPACE_AROUND,
         }
     }
 }

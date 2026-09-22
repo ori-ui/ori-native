@@ -201,7 +201,7 @@ impl Measurable<Platform> for Layout {
     fn measure(
         &mut self,
         _platform: &mut Platform,
-        _known_size: Size<Option<f32>>,
+        known_size: Size<Option<f32>>,
         _available_space: Size<AvailableSpace>,
     ) -> Size<f32> {
         let context = self.view.pango_context();
@@ -215,8 +215,8 @@ impl Measurable<Platform> for Layout {
         let pheight = (metrics.ascent() + metrics.descent()) as f32 / pango::SCALE as f32;
 
         Size {
-            width:  0.0,
-            height: theight.max(pheight).ceil(),
+            width:  known_size.width.unwrap_or(0.0),
+            height: (theight.max(pheight) * 1.25).ceil(),
         }
     }
 }

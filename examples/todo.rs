@@ -119,6 +119,7 @@ fn todo(index: usize, _todo: &Todo) -> impl View<Data> + use<> {
         } else {
             Color::TRANSPARENT
         })
+        .min_width(0.0)
     })
     .on_press(|todo: &mut Todo, _| todo.done = !todo.done);
 
