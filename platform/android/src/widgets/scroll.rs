@@ -103,7 +103,7 @@ impl NativeScroll<Platform> for Scroll {
     }
 
     fn set_direction(&mut self, platform: &mut Platform, direction: Direction) {
-        let is_vertical = matches!(direction, Direction::Column);
+        let is_vertical = matches!(direction, Direction::Vertical);
 
         let _ = platform.jni(|env, activity| {
             env.call_method(

@@ -30,10 +30,10 @@ impl From<Fract> for Length {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Direction {
     /// Horizontal or row.
-    Row,
+    Horizontal,
 
     /// Vertical or column.
-    Column,
+    Vertical,
 }
 
 /// Alignment of contents.
@@ -402,7 +402,7 @@ pub struct FlexStyle {
 impl Default for FlexStyle {
     fn default() -> Self {
         Self {
-            direction:       Direction::Row,
+            direction:       Direction::Horizontal,
             reverse:         false,
             wrap:            false,
             justify_content: None,

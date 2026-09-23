@@ -479,11 +479,11 @@ impl<P> LayoutTree<P> {
         };
 
         layout.flex_direction = match flex.direction {
-            Direction::Row if flex.reverse => taffy::FlexDirection::RowReverse,
-            Direction::Column if flex.reverse => taffy::FlexDirection::ColumnReverse,
+            Direction::Horizontal if flex.reverse => taffy::FlexDirection::RowReverse,
+            Direction::Vertical if flex.reverse => taffy::FlexDirection::ColumnReverse,
 
-            Direction::Row => taffy::FlexDirection::Row,
-            Direction::Column => taffy::FlexDirection::Column,
+            Direction::Horizontal => taffy::FlexDirection::Row,
+            Direction::Vertical => taffy::FlexDirection::Column,
         };
 
         layout.flex_wrap = match flex.wrap {

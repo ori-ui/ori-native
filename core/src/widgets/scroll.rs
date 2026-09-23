@@ -73,12 +73,12 @@ where
         self.native.set_direction(&mut cx.platform, direction);
 
         let overflow = match direction {
-            Direction::Row => Size {
+            Direction::Horizontal => Size {
                 width:  Overflow::Hidden,
                 height: Overflow::Visible,
             },
 
-            Direction::Column => Size {
+            Direction::Vertical => Size {
                 width:  Overflow::Visible,
                 height: Overflow::Hidden,
             },

@@ -76,7 +76,7 @@ where
             group_layout,
             scroll_layout,
 
-            direction: Direction::Column,
+            direction: Direction::Vertical,
             gap: 0.0,
             min_views,
             buffer,
@@ -392,13 +392,13 @@ where
                     child.offset = offset;
 
                     let x_offset = match self.direction {
-                        Direction::Row => offset,
-                        Direction::Column => 0.0,
+                        Direction::Horizontal => offset,
+                        Direction::Vertical => 0.0,
                     };
 
                     let y_offset = match self.direction {
-                        Direction::Row => 0.0,
-                        Direction::Column => offset,
+                        Direction::Horizontal => 0.0,
+                        Direction::Vertical => offset,
                     };
 
                     self.group.set_child_layout(
@@ -435,11 +435,11 @@ where
 
     fn allocation_size(direction: Direction, allocation: Allocation) -> f32 {
         match direction {
-            Direction::Row => {
+            Direction::Horizontal => {
                 allocation.size.width + allocation.margin.left + allocation.margin.right
             }
 
-            Direction::Column => {
+            Direction::Vertical => {
                 allocation.size.height + allocation.margin.top + allocation.margin.bottom
             }
         }
@@ -447,12 +447,12 @@ where
 
     fn content_layout(direction: Direction, size: f32) -> LayoutStyle {
         let size = match direction {
-            Direction::Row => Size {
+            Direction::Horizontal => Size {
                 width:  Some(Length::Length(size)),
                 height: Some(Length::Fract(1.0)),
             },
 
-            Direction::Column => Size {
+            Direction::Vertical => Size {
                 width:  Some(Length::Fract(1.0)),
                 height: Some(Length::Length(size)),
             },
@@ -474,12 +474,12 @@ where
 
     fn scroll_overflow(direction: Direction) -> Size<Overflow> {
         match direction {
-            Direction::Row => Size {
+            Direction::Horizontal => Size {
                 width:  Overflow::Hidden,
                 height: Overflow::Visible,
             },
 
-            Direction::Column => Size {
+            Direction::Vertical => Size {
                 width:  Overflow::Visible,
                 height: Overflow::Hidden,
             },
@@ -495,14 +495,14 @@ where
 
     fn child_layout(direction: Direction) -> LayoutStyle {
         let inset = match direction {
-            Direction::Row => Sides {
+            Direction::Horizontal => Sides {
                 left:   None,
                 right:  None,
                 top:    Some(Length::Length(0.0)),
                 bottom: Some(Length::Length(0.0)),
             },
 
-            Direction::Column => Sides {
+            Direction::Vertical => Sides {
                 left:   Some(Length::Length(0.0)),
                 right:  Some(Length::Length(0.0)),
                 top:    None,
@@ -575,8 +575,8 @@ where
             && self.scroll_allocation != Some(allocation)
         {
             self.window_size = match self.direction {
-                Direction::Row => allocation.size.width,
-                Direction::Column => allocation.size.height,
+                Direction::Horizontal => allocation.size.width,
+                Direction::Vertical => allocation.size.height,
             };
 
             self.scroll.set_content_size(

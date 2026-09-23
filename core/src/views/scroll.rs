@@ -7,12 +7,12 @@ use crate::{
 
 /// [`View`] of a horizontal scroll area.
 pub fn hscroll<T, V>(contents: V) -> Scroll<T, V> {
-    Scroll::new(contents, Direction::Row)
+    Scroll::new(contents, Direction::Horizontal)
 }
 
 /// [`View`] of a vertical scroll area.
 pub fn vscroll<T, V>(contents: V) -> Scroll<T, V> {
-    Scroll::new(contents, Direction::Column)
+    Scroll::new(contents, Direction::Vertical)
 }
 
 /// [`View`] of a scroll area.
@@ -128,8 +128,8 @@ where
     ) -> Action {
         if let Some(ScrollMessage(x, y)) = message.take(state.view_id) {
             let scroll = match state.direction {
-                Direction::Row => x,
-                Direction::Column => y,
+                Direction::Horizontal => x,
+                Direction::Vertical => y,
             };
 
             return (state.on_scroll)(data, scroll);

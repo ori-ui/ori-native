@@ -29,7 +29,7 @@ impl<F> List<F> {
     pub fn new(count: usize, build: F) -> Self {
         Self {
             layout: LayoutStyle::default(),
-            direction: Direction::Column,
+            direction: Direction::Vertical,
             padding: Sides::all(Length::Length(0.0)),
             gap: 0.0,
             min_views: 16,
@@ -207,8 +207,8 @@ where
 
             Some(ListMessage::Scrolled(x, y)) => {
                 let offset = match state.direction {
-                    Direction::Row => x,
-                    Direction::Column => y,
+                    Direction::Horizontal => x,
+                    Direction::Vertical => y,
                 };
 
                 element.set_offset(offset);

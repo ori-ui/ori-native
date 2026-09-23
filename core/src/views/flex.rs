@@ -13,12 +13,12 @@ pub fn flex<V>(contents: V) -> Flex<V> {
 
 /// [`View`] of a flex row.
 pub fn row<V>(contents: V) -> Flex<V> {
-    Flex::new(contents).direction(Direction::Row)
+    Flex::new(contents).direction(Direction::Horizontal)
 }
 
 /// [`View`] of a flex column.
 pub fn column<V>(contents: V) -> Flex<V> {
-    Flex::new(contents).direction(Direction::Column)
+    Flex::new(contents).direction(Direction::Vertical)
 }
 
 /// [`View`] of a flex container.

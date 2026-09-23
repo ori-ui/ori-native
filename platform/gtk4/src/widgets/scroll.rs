@@ -80,13 +80,13 @@ impl NativeScroll<Platform> for Scroll {
 
     fn set_direction(&mut self, _platform: &mut Platform, direction: Direction) {
         self.scroll.set_hscrollbar_policy(match direction {
-            Direction::Row => gtk4::PolicyType::Automatic,
-            Direction::Column => gtk4::PolicyType::Never,
+            Direction::Horizontal => gtk4::PolicyType::Automatic,
+            Direction::Vertical => gtk4::PolicyType::Never,
         });
 
         self.scroll.set_vscrollbar_policy(match direction {
-            Direction::Row => gtk4::PolicyType::Never,
-            Direction::Column => gtk4::PolicyType::Automatic,
+            Direction::Horizontal => gtk4::PolicyType::Never,
+            Direction::Vertical => gtk4::PolicyType::Automatic,
         });
     }
 }
