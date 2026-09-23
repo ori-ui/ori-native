@@ -126,6 +126,17 @@ impl<T, F> Pressable<T, F> {
         })
     }
 
+    /// Set the callback for when the pointer is released from the [`View`].
+    pub fn on_up<A>(self, mut on_up: impl FnMut(&mut T, PressEvent) -> A + 'static) -> Self
+    where
+        A: Into<Action>,
+    {
+        self.on_event(move |data, event| match event {
+            PressableEvent::Released(event) => on_up(data, event).into(),
+            _ => Action::new(),
+        })
+    }
+
     /// Set a callback for when `key` is pressed.
     pub fn on_key<A>(
         mut self,
