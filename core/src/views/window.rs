@@ -5,8 +5,8 @@ use ori::{Action, Message, Mut, Proxied, Proxy, Tracker, View, ViewId, ViewMarke
 
 use crate::{
     Allocation, AnimateRequest, AvailableSpace, Context, Input, InputHandler, LayoutNode,
-    LayoutRequest, Length, MatchKey, NavigationBar, Parent, Platform, Size, Sizing, StatusBar,
-    Widget, WidgetView, native::NativeWindow, widget::WidgetMut,
+    LayoutRequest, LayoutStyle, Length, MatchKey, NavigationBar, Parent, Platform, Size, Sizing,
+    StatusBar, Widget, WidgetView, native::NativeWindow, widget::WidgetMut,
 };
 
 /// [`View`] of a window.
@@ -212,6 +212,15 @@ where
         cx.register(view_id);
 
         let node = cx.layout.add_node(&[]);
+        cx.layout.set_layout(
+            node,
+            LayoutStyle {
+                size: Size::all(Some(Length::Fract(1.0))),
+                min_size: Size::all(Some(Length::Length(0.0))),
+                max_size: Size::all(Some(Length::Fract(1.0))),
+                ..Default::default()
+            },
+        );
         cx.layout.insert_root(node, view_id);
 
         let (contents, state) = contents.build(cx, data);
@@ -385,17 +394,13 @@ where
 
         if let Sizing::User = self.sizing {
             let size = Size {
-                width:  AvailableSpace::MinContent,
-                height: AvailableSpace::MinContent,
+                width:  AvailableSpace::Definite(0.0),
+                height: AvailableSpace::Definite(0.0),
             };
 
-            cx.layout.compute_layout(
-                &mut cx.platform,
-                self.contents.layout_node(),
-                size,
-            );
+            (cx.layout).compute_layout(&mut cx.platform, self.layout, size);
 
-            if let Some(layout) = cx.layout.get_allocation(self.contents.layout_node()) {
+            if let Some(layout) = cx.layout.get_allocation(self.layout) {
                 self.window.set_min_size(
                     &mut cx.platform,
                     layout.content_size.width,
@@ -403,32 +408,6 @@ where
                 );
             }
         }
-
-        let size = match self.sizing {
-            Sizing::User => Size {
-                width:  Some(Length::Length(width)),
-                height: Some(Length::Length(height)),
-            },
-
-            Sizing::Content => {
-                let mut size = Size::all(None);
-
-                let (preferred_width, preferred_height) =
-                    self.window.get_preferred_size(&mut cx.platform);
-
-                if let Some(min_width) = preferred_width {
-                    size.width = Some(Length::Length(min_width));
-                }
-
-                if let Some(min_height) = preferred_height {
-                    size.height = Some(Length::Length(min_height));
-                }
-
-                size
-            }
-        };
-
-        cx.layout.set_size_without_request(self.layout, size);
 
         let size = match self.sizing {
             Sizing::User => Size {
