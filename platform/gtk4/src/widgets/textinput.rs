@@ -172,8 +172,6 @@ impl NativeTextInput<Platform> for TextInput {
         align: TextAlign,
         wrap: TextWrap,
     ) {
-        self.placeholder.set_visible(true);
-
         self.placeholder.set_justification(match align {
             TextAlign::Start => gtk4::Justification::Left,
             TextAlign::Center => gtk4::Justification::Center,
