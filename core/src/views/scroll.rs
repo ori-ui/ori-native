@@ -30,7 +30,10 @@ impl<T, V> Scroll<T, V> {
         Self {
             contents,
             direction,
-            layout: LayoutStyle::default(),
+            layout: LayoutStyle {
+                flex_shrink: 1.0,
+                ..Default::default()
+            },
             on_scroll: Box::new(|_, _| Action::new()),
         }
     }

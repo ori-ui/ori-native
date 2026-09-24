@@ -28,7 +28,10 @@ impl<F> List<F> {
     /// Create new [`List`].
     pub fn new(count: usize, build: F) -> Self {
         Self {
-            layout: LayoutStyle::default(),
+            layout: LayoutStyle {
+                flex_shrink: 1.0,
+                ..Default::default()
+            },
             direction: Direction::Vertical,
             padding: Sides::all(Length::Length(0.0)),
             gap: 0.0,

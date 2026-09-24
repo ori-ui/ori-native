@@ -346,7 +346,7 @@ impl Default for LayoutStyle {
         Self {
             position:    Position::Relative,
             align_self:  None,
-            flex_shrink: 1.0,
+            flex_shrink: 0.0,
             flex_grow:   0.0,
             flex_basis:  None,
             margin:      Sides::all(Some(Length::Length(0.0))),
