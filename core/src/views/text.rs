@@ -3,8 +3,8 @@ use std::borrow::Cow;
 use ori::{Action, Message, Mut, View, ViewMarker};
 
 use crate::{
-    Color, Context, Font, Layout, LayoutStyle, Platform, Stretch, TextSpan, Weight, Wrap,
-    widgets::TextWidget,
+    Color, Context, Font, Layout, LayoutStyle, Platform, Stretch, TextAlign, TextSpan, TextWrap,
+    Weight, widgets::TextWidget,
 };
 
 /// [`View`] of a text paragraph.
@@ -17,7 +17,8 @@ pub struct Text {
     layout: LayoutStyle,
     font:   Font,
     text:   String,
-    wrap:   Wrap,
+    align:  TextAlign,
+    wrap:   TextWrap,
 }
 
 impl Text {
@@ -27,7 +28,8 @@ impl Text {
             layout: LayoutStyle::default(),
             font:   Default::default(),
             text:   text.into(),
-            wrap:   Wrap::None,
+            align:  TextAlign::Start,
+            wrap:   TextWrap::None,
         }
     }
 
@@ -67,8 +69,14 @@ impl Text {
         self
     }
 
+    /// Set the text alignment.
+    pub fn align(mut self, align: TextAlign) -> Self {
+        self.align = align;
+        self
+    }
+
     /// Set the wrapping mode.
-    pub fn wrap(mut self, wrap: Wrap) -> Self {
+    pub fn wrap(mut self, wrap: TextWrap) -> Self {
         self.wrap = wrap;
         self
     }
@@ -107,6 +115,7 @@ where
             cx,
             spans.into(),
             self.text.clone(),
+            self.align,
             self.wrap,
         );
 
@@ -114,6 +123,8 @@ where
             layout: self.layout,
             font:   self.font,
             text:   self.text,
+            align:  self.align,
+            wrap:   self.wrap,
         };
 
         (widget, state)
@@ -130,19 +141,31 @@ where
             element.set_layout(cx, self.layout);
         }
 
-        if state.font == self.font && state.text == self.text {
+        if state.font == self.font
+            && state.text == self.text
+            && state.align == self.align
+            && state.wrap == self.wrap
+        {
             return;
         }
 
         state.font = self.font.clone();
         state.text = self.text.clone();
+        state.align = self.align;
+        state.wrap = self.wrap;
 
         let spans = [TextSpan {
             font:  self.font,
             range: 0..self.text.len(),
         }];
 
-        element.set_text(cx, spans.into(), self.text, self.wrap);
+        element.set_text(
+            cx,
+            spans.into(),
+            self.text,
+            self.align,
+            self.wrap,
+        );
     }
 
     fn message(
@@ -164,4 +187,6 @@ pub struct TextState {
     layout: LayoutStyle,
     font:   Font,
     text:   String,
+    align:  TextAlign,
+    wrap:   TextWrap,
 }

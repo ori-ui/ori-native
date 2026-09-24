@@ -1,6 +1,8 @@
 use std::convert::Infallible;
 
-use crate::{Font, Measurable, Newline, Platform, Unsupported, platform::unsupported};
+use crate::{
+    Font, Measurable, Newline, Platform, TextAlign, TextWrap, Unsupported, platform::unsupported,
+};
 
 /// A native text input widget.
 pub trait NativeTextInput<P>
@@ -27,13 +29,19 @@ where
     fn set_accept_tab(&mut self, platform: &mut P, accept_tab: bool);
 
     /// Set the `font` of the text.
-    fn set_font(&mut self, platform: &mut P, font: Font);
+    fn set_font(&mut self, platform: &mut P, font: Font, align: TextAlign, wrap: TextWrap);
 
     /// Set the `text`.
     fn set_text(&mut self, platform: &mut P, text: String);
 
     /// Set the `font` of the placeholder text.
-    fn set_placeholder_font(&mut self, platform: &mut P, font: Font);
+    fn set_placeholder_font(
+        &mut self,
+        platform: &mut P,
+        font: Font,
+        align: TextAlign,
+        wrap: TextWrap,
+    );
 
     /// Set the placeholder `text`.
     fn set_placeholder_text(&mut self, platform: &mut P, text: String);
@@ -70,7 +78,7 @@ where
         unreachable!()
     }
 
-    fn set_font(&mut self, _platform: &mut P, _font: Font) {
+    fn set_font(&mut self, _platform: &mut P, _font: Font, _align: TextAlign, _wrap: TextWrap) {
         unreachable!()
     }
 
@@ -78,7 +86,13 @@ where
         unreachable!()
     }
 
-    fn set_placeholder_font(&mut self, _platform: &mut P, _font: Font) {
+    fn set_placeholder_font(
+        &mut self,
+        _platform: &mut P,
+        _font: Font,
+        _align: TextAlign,
+        _wrap: TextWrap,
+    ) {
         unreachable!()
     }
 

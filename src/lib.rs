@@ -59,7 +59,7 @@ pub mod prelude {
         Corners, Direction, Effect, Element, FlexContainer, Font, Fract, Justify, Key, Layout,
         Length, Message, Modifiers, NamedKey, NavigationBar, Newline, Overflow, Padding, Position,
         PressableEvent, Proxy, SafeAreaInsets, Shadow, Side, Sides, Size, Sizing, StatusBar,
-        Stretch, View, ViewId, ViewSeq, Weight, Wrap, views::*,
+        Stretch, TextAlign, TextWrap, View, ViewId, ViewSeq, Weight, views::*,
     };
 
     #[allow(unused_imports)]

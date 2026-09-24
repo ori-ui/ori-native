@@ -111,7 +111,7 @@ pub enum Stretch {
 
 /// Wrap mode of text.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Wrap {
+pub enum TextWrap {
     /// Text is wrapped between words.
     Word,
 
@@ -120,6 +120,22 @@ pub enum Wrap {
 
     /// Text is not wrapped.
     None,
+}
+
+/// Alignment mode of text.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum TextAlign {
+    /// Text is aligned at the start.
+    Start,
+
+    /// Text is aligned at the center.
+    Center,
+
+    /// Text is aligned at the end.
+    End,
+
+    /// Text is justified.
+    Justify,
 }
 
 /// A [`Font`] associated with a span of text.

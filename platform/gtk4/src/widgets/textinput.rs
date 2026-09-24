@@ -3,7 +3,8 @@ use std::{cell::Cell, rc::Rc};
 use glib::object::{Cast, ObjectExt};
 use gtk4::prelude::{TextBufferExt, TextViewExt, WidgetExt};
 use ori_native_core::{
-    AvailableSpace, Font, Measurable, Newline, Size, Stretch, native::NativeTextInput,
+    AvailableSpace, Font, Measurable, Newline, Size, Stretch, TextAlign, TextWrap,
+    native::NativeTextInput,
 };
 
 use crate::{Platform, platform::StyleNode};
@@ -72,6 +73,14 @@ impl NativeTextInput<Platform> for TextInput {
                     true,
                 );
 
+                buffer.tag_table().foreach(|tag| {
+                    buffer.apply_tag(
+                        tag,
+                        &buffer.start_iter(),
+                        &buffer.end_iter(),
+                    );
+                });
+
                 on_change(text.into());
             }
         });
@@ -138,13 +147,45 @@ impl NativeTextInput<Platform> for TextInput {
         self.view.set_accepts_tab(accept_tab);
     }
 
-    fn set_font(&mut self, platform: &mut Platform, font: Font) {
+    fn set_font(&mut self, platform: &mut Platform, font: Font, align: TextAlign, wrap: TextWrap) {
+        self.view.set_justification(match align {
+            TextAlign::Start => gtk4::Justification::Left,
+            TextAlign::Center => gtk4::Justification::Center,
+            TextAlign::End => gtk4::Justification::Right,
+            TextAlign::Justify => gtk4::Justification::Fill,
+        });
+
+        self.view.set_wrap_mode(match wrap {
+            TextWrap::Word => gtk4::WrapMode::Word,
+            TextWrap::Char => gtk4::WrapMode::Char,
+            TextWrap::None => gtk4::WrapMode::None,
+        });
+
         platform.set_style(self.view_style, &font_style(&font));
         self.font = font;
     }
 
-    fn set_placeholder_font(&mut self, _platform: &mut Platform, font: Font) {
+    fn set_placeholder_font(
+        &mut self,
+        _platform: &mut Platform,
+        font: Font,
+        align: TextAlign,
+        wrap: TextWrap,
+    ) {
         self.placeholder.set_visible(true);
+
+        self.placeholder.set_justification(match align {
+            TextAlign::Start => gtk4::Justification::Left,
+            TextAlign::Center => gtk4::Justification::Center,
+            TextAlign::End => gtk4::Justification::Right,
+            TextAlign::Justify => gtk4::Justification::Fill,
+        });
+
+        self.placeholder.set_wrap_mode(match wrap {
+            TextWrap::Word => gtk4::WrapMode::Word,
+            TextWrap::Char => gtk4::WrapMode::Char,
+            TextWrap::None => gtk4::WrapMode::None,
+        });
 
         let buffer = self.placeholder.buffer();
         let tag_table = buffer.tag_table();

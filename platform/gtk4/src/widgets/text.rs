@@ -1,7 +1,8 @@
 use glib::object::Cast;
 use gtk4::prelude::{TextBufferExt, TextBufferExtManual, TextTagExt, TextViewExt, WidgetExt};
 use ori_native_core::{
-    AvailableSpace, Font, Measurable, Size, Stretch, TextSpan, Weight, Wrap, native::NativeText,
+    AvailableSpace, Font, Measurable, Size, Stretch, TextAlign, TextSpan, TextWrap, Weight,
+    native::NativeText,
 };
 
 use crate::Platform;
@@ -31,13 +32,21 @@ impl NativeText<Platform> for Text {
         _platform: &mut Platform,
         spans: Box<[TextSpan]>,
         text: String,
-        wrap: Wrap,
+        align: TextAlign,
+        wrap: TextWrap,
     ) -> impl Measurable<Platform> {
-        match wrap {
-            Wrap::Word => self.view.set_wrap_mode(gtk4::WrapMode::Word),
-            Wrap::Char => self.view.set_wrap_mode(gtk4::WrapMode::Char),
-            Wrap::None => self.view.set_wrap_mode(gtk4::WrapMode::None),
-        }
+        self.view.set_justification(match align {
+            TextAlign::Start => gtk4::Justification::Left,
+            TextAlign::Center => gtk4::Justification::Center,
+            TextAlign::End => gtk4::Justification::Right,
+            TextAlign::Justify => gtk4::Justification::Fill,
+        });
+
+        self.view.set_wrap_mode(match wrap {
+            TextWrap::Word => gtk4::WrapMode::Word,
+            TextWrap::Char => gtk4::WrapMode::Char,
+            TextWrap::None => gtk4::WrapMode::None,
+        });
 
         let buffer = self.view.buffer();
         buffer.set_text("");
@@ -66,7 +75,7 @@ pub struct TextLayout {
     view:  gtk4::TextView,
     spans: Box<[TextSpan]>,
     text:  String,
-    wrap:  Wrap,
+    wrap:  TextWrap,
 }
 
 impl Measurable<Platform> for TextLayout {
@@ -101,12 +110,12 @@ impl Measurable<Platform> for TextLayout {
         layout.set_attributes(Some(&attrs));
 
         match self.wrap {
-            Wrap::Word => layout.set_wrap(pango::WrapMode::Word),
-            Wrap::Char => layout.set_wrap(pango::WrapMode::Char),
-            Wrap::None => {}
+            TextWrap::Word => layout.set_wrap(pango::WrapMode::Word),
+            TextWrap::Char => layout.set_wrap(pango::WrapMode::Char),
+            TextWrap::None => {}
         }
 
-        if !matches!(self.wrap, Wrap::None) {
+        if !matches!(self.wrap, TextWrap::None) {
             let width = match (known_size.width, available_space.width) {
                 (Some(width), _) | (_, AvailableSpace::Definite(width)) => {
                     (width * pango::SCALE as f32).round() as i32

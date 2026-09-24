@@ -32,7 +32,7 @@ pub use style::{
     Justify, Layout, LayoutStyle, Length, NavigationBar, Newline, Overflow, Padding, Point,
     PopupPosition, Position, Shadow, Side, Sides, Size, Sizing, StatusBar,
 };
-pub use text::{Font, Stretch, TextSpan, Weight, Wrap};
+pub use text::{Font, Stretch, TextAlign, TextSpan, TextWrap, Weight};
 pub use widget::{BoxedWidget, Parent, Widget, WidgetMut, WidgetView, WidgetViewSeq};
 
 pub use keyboard_types::{Key, Modifiers, NamedKey};

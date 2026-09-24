@@ -1,6 +1,8 @@
 use std::convert::Infallible;
 
-use crate::{Measurable, Platform, TextSpan, Unsupported, Wrap, platform::unsupported};
+use crate::{
+    Measurable, Platform, TextAlign, TextSpan, TextWrap, Unsupported, platform::unsupported,
+};
 
 /// A native text widget.
 pub trait NativeText<P>
@@ -22,7 +24,8 @@ where
         platform: &mut P,
         spans: Box<[TextSpan]>,
         text: String,
-        wrap: Wrap,
+        align: TextAlign,
+        wrap: TextWrap,
     ) -> impl Measurable<P>;
 }
 
@@ -48,7 +51,8 @@ where
         _platform: &mut P,
         _spans: Box<[TextSpan]>,
         _text: String,
-        _wrap: Wrap,
+        _align: TextAlign,
+        _wrap: TextWrap,
     ) -> Infallible {
         unreachable!()
     }

@@ -3,8 +3,8 @@ use std::borrow::Cow;
 use ori::{Action, Message, Mut, Proxied, Proxy, Tracker, View, ViewId, ViewMarker};
 
 use crate::{
-    Color, Context, Font, Layout, LayoutStyle, Newline, Platform, Stretch, Weight,
-    widgets::TextInputWidget,
+    Color, Context, Font, Layout, LayoutStyle, Newline, Platform, Stretch, TextAlign, TextWrap,
+    Weight, widgets::TextInputWidget,
 };
 
 /// [`View`] of a text input.
@@ -21,6 +21,9 @@ pub struct TextInput<T> {
 
     placeholder_font: Font,
     placeholder_text: String,
+
+    align: TextAlign,
+    wrap:  TextWrap,
 
     newline:    Newline,
     accept_tab: bool,
@@ -47,6 +50,9 @@ impl<T> TextInput<T> {
                 ..Default::default()
             },
             placeholder_text: String::new(),
+
+            align: TextAlign::Start,
+            wrap:  TextWrap::Word,
 
             newline:    Newline::Enter,
             accept_tab: true,
@@ -157,6 +163,18 @@ impl<T> TextInput<T> {
         self
     }
 
+    /// Set the text alignment.
+    pub fn align(mut self, align: TextAlign) -> Self {
+        self.align = align;
+        self
+    }
+
+    /// Set the text wrapping.
+    pub fn wrap(mut self, wrap: TextWrap) -> Self {
+        self.wrap = wrap;
+        self
+    }
+
     /// Set the newline behaviour.
     pub fn newline(mut self, newline: Newline) -> Self {
         self.newline = newline;
@@ -235,13 +253,24 @@ where
 
         let mut widget = TextInputWidget::new(cx, on_change, on_submit);
         widget.set_layout(cx, self.layout);
-        widget.set_font(cx, self.font.clone());
+        widget.set_font(
+            cx,
+            self.font.clone(),
+            self.align,
+            self.wrap,
+        );
 
         if let Some(text) = self.text.clone() {
             widget.set_text(cx, text);
         }
 
-        widget.set_placeholder_font(cx, self.placeholder_font.clone());
+        widget.set_placeholder_font(
+            cx,
+            self.placeholder_font.clone(),
+            self.align,
+            self.wrap,
+        );
+
         widget.set_placeholder_text(cx, self.placeholder_text.clone());
         widget.update_layout(cx);
 
@@ -256,6 +285,9 @@ where
 
             placeholder_font: self.placeholder_font,
             placeholder_text: self.placeholder_text,
+
+            align: self.align,
+            wrap: self.wrap,
 
             newline: self.newline,
             accept_tab: self.accept_tab,
@@ -282,9 +314,11 @@ where
 
         let mut changed = false;
 
-        if state.font != self.font {
+        if state.font != self.font || state.align != self.align || state.wrap != self.wrap {
             state.font = self.font.clone();
-            element.set_font(cx, self.font);
+            state.align = self.align;
+            state.wrap = self.wrap;
+            element.set_font(cx, self.font, self.align, self.wrap);
             changed |= true;
         }
 
@@ -296,9 +330,19 @@ where
             changed |= true;
         }
 
-        if state.placeholder_font != self.placeholder_font {
+        if state.placeholder_font != self.placeholder_font
+            || state.align != self.align
+            || state.wrap != self.wrap
+        {
             state.placeholder_font = self.placeholder_font.clone();
-            element.set_font(cx, self.placeholder_font);
+            state.align = self.align;
+            state.wrap = self.wrap;
+            element.set_font(
+                cx,
+                self.placeholder_font,
+                self.align,
+                self.wrap,
+            );
             changed |= true;
         }
 
@@ -362,6 +406,9 @@ pub struct TextInputState<T> {
 
     placeholder_font: Font,
     placeholder_text: String,
+
+    align: TextAlign,
+    wrap:  TextWrap,
 
     newline:    Newline,
     accept_tab: bool,

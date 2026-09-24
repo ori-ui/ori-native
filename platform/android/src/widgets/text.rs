@@ -1,5 +1,7 @@
 use jni::{jni_sig, jni_str, objects::JString};
-use ori_native_core::{AvailableSpace, Measurable, Size, TextSpan, Wrap, native::NativeText};
+use ori_native_core::{
+    AvailableSpace, Measurable, Size, TextAlign, TextSpan, TextWrap, native::NativeText,
+};
 
 use crate::{Platform, platform::WidgetId};
 
@@ -37,15 +39,16 @@ impl NativeText<Platform> for Text {
         platform: &mut Platform,
         spans: Box<[TextSpan]>,
         text: String,
-        wrap: Wrap,
+        _align: TextAlign,
+        wrap: TextWrap,
     ) -> impl Measurable<Platform> {
         let _ = platform.jni(|env, activity| {
             let jstring = env.new_string(&text)?;
 
             let wrap = match wrap {
-                Wrap::None => 3,
-                Wrap::Char => 1,
-                Wrap::Word => 2,
+                TextWrap::None => 3,
+                TextWrap::Char => 1,
+                TextWrap::Word => 2,
             };
 
             env.call_method(

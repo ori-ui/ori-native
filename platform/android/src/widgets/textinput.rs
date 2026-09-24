@@ -2,7 +2,9 @@ use jni::{
     EnvUnowned, jni_sig, jni_str,
     objects::{JObject, JString},
 };
-use ori_native_core::{AvailableSpace, Font, Measurable, Newline, Size, native::NativeTextInput};
+use ori_native_core::{
+    AvailableSpace, Font, Measurable, Newline, Size, TextAlign, TextWrap, native::NativeTextInput,
+};
 
 use crate::{
     Platform,
@@ -71,7 +73,13 @@ impl NativeTextInput<Platform> for TextInput {
 
     fn set_accept_tab(&mut self, _platform: &mut Platform, _accept_tab: bool) {}
 
-    fn set_font(&mut self, platform: &mut Platform, font: Font) {
+    fn set_font(
+        &mut self,
+        platform: &mut Platform,
+        font: Font,
+        _align: TextAlign,
+        _wrap: TextWrap,
+    ) {
         let _ = platform.jni(|env, activity| {
             let family = match font.family {
                 Some(family) => env.new_string(family)?,
@@ -128,7 +136,13 @@ impl NativeTextInput<Platform> for TextInput {
         });
     }
 
-    fn set_placeholder_font(&mut self, platform: &mut Platform, font: Font) {
+    fn set_placeholder_font(
+        &mut self,
+        platform: &mut Platform,
+        font: Font,
+        _align: TextAlign,
+        _wrap: TextWrap,
+    ) {
         let _ = platform.jni(|env, activity| {
             let family = match font.family {
                 Some(family) => env.new_string(family)?,

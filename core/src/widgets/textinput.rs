@@ -3,8 +3,8 @@ use std::time::Duration;
 use ori::Element;
 
 use crate::{
-    CachedMeasurable, Context, Font, LayoutNode, LayoutStyle, Newline, Platform, Widget,
-    native::NativeTextInput, widget::WidgetMut,
+    CachedMeasurable, Context, Font, LayoutNode, LayoutStyle, Newline, Platform, TextAlign,
+    TextWrap, Widget, native::NativeTextInput, widget::WidgetMut,
 };
 
 /// A [`Widget`] that handles text input.
@@ -54,13 +54,19 @@ where
     }
 
     /// Set the `font`.
-    pub fn set_font(&mut self, cx: &mut Context<P>, font: Font) {
-        self.native.set_font(&mut cx.platform, font);
+    pub fn set_font(&mut self, cx: &mut Context<P>, font: Font, align: TextAlign, wrap: TextWrap) {
+        self.native.set_font(&mut cx.platform, font, align, wrap);
     }
 
     /// Set the `font` of the placeholder text.
-    pub fn set_placeholder_font(&mut self, cx: &mut Context<P>, font: Font) {
-        self.native.set_placeholder_font(&mut cx.platform, font);
+    pub fn set_placeholder_font(
+        &mut self,
+        cx: &mut Context<P>,
+        font: Font,
+        align: TextAlign,
+        wrap: TextWrap,
+    ) {
+        (self.native).set_placeholder_font(&mut cx.platform, font, align, wrap);
     }
 
     /// Set the `newline` behaviour.
