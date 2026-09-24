@@ -209,8 +209,10 @@ impl<P> LayoutTree<P> {
             },
 
             content_size: Size {
-                width:  layout.content_box_width(),
-                height: layout.content_box_height(),
+                width:  layout.scrollable_overflow_rect.right
+                    - layout.scrollable_overflow_rect.left,
+                height: layout.scrollable_overflow_rect.bottom
+                    - layout.scrollable_overflow_rect.top,
             },
 
             margin: Sides {
