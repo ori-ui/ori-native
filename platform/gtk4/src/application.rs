@@ -120,11 +120,38 @@ impl Application {
         }
 
         glib::log_set_writer_func(|level, fields| {
+            macro_rules! event {
+                ($target:expr, $level:expr, $message:expr) => {
+                    match $level {
+                        glib::LogLevel::Error | glib::LogLevel::Critical => {
+                            tracing::error!(target: $target, "{}", $message);
+                        }
+
+                        glib::LogLevel::Message | glib::LogLevel::Info => {
+                            tracing::info!(target: $target, "{}", $message);
+                        }
+
+                        glib::LogLevel::Warning => {
+                            tracing::warn!(target: $target, "{}", $message);
+                        }
+
+                        glib::LogLevel::Debug => {
+                            tracing::debug!(target: $target, "{}", $message);
+                        }
+                    }
+                };
+            }
+
             let mut message = None;
+            let mut domain = None;
 
             for field in fields {
                 if field.key() == "MESSAGE" {
                     message = field.value_str()
+                }
+
+                if field.key() == "GLIB_DOMAIN" {
+                    domain = field.value_str();
                 }
 
                 if field.key() == "CODE_FUNC"
@@ -137,17 +164,15 @@ impl Application {
 
             let message = message.unwrap_or("<no message>");
 
-            match level {
-                glib::LogLevel::Error | glib::LogLevel::Critical => {
-                    tracing::error!(target: "glib", "{message}")
-                }
-
-                glib::LogLevel::Message | glib::LogLevel::Info => {
-                    tracing::info!(target: "glib", "{message}")
-                }
-
-                glib::LogLevel::Warning => tracing::warn!(target: "glib", "{message}"),
-                glib::LogLevel::Debug => tracing::debug!(target: "glib", "{message}"),
+            match domain {
+                Some("Gdk") => event!("gdk", level, message),
+                Some("Gtk") => event!("gtk", level, message),
+                Some("GLib") => event!("glib", level, message),
+                Some("GObject") => event!("gobject", level, message),
+                Some("GLib-GIO") => event!("gio", level, message),
+                Some("cairo") => event!("cairo", level, message),
+                Some("Gsk") => event!("gsk", level, message),
+                _ => event!("unknown", level, message),
             }
 
             glib::LogWriterOutput::Handled
