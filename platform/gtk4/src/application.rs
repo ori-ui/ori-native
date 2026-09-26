@@ -126,6 +126,13 @@ impl Application {
                 if field.key() == "MESSAGE" {
                     message = field.value_str()
                 }
+
+                if field.key() == "CODE_FUNC"
+                    && (field.value_str() == Some("gtk_widget_measure")
+                        || field.value_str() == Some("gtk_widget_allocate"))
+                {
+                    return glib::LogWriterOutput::Handled;
+                }
             }
 
             let message = message.unwrap_or("<no message>");
