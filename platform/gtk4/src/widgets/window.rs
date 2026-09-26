@@ -4,7 +4,7 @@ use glib::{
     object::{Cast, IsA, ObjectExt},
     subclass::types::ObjectSubclassIsExt,
 };
-use gtk4::prelude::{EventControllerExt, FixedExt, GtkWindowExt, WidgetExt};
+use gtk4::prelude::{EventControllerExt, GtkWindowExt, WidgetExt};
 use ori_native_core::{Key, Modifiers, NavigationBar, StatusBar, native::NativeWindow};
 
 use crate::{Platform, key};
@@ -12,7 +12,7 @@ use crate::{Platform, key};
 impl NativeWindow<Platform> for Window {
     fn build(platform: &mut Platform, contents: gtk4::Widget) -> Self {
         let window = Self::new(&platform.application);
-        window.set_child(&contents, 0.0, 0.0);
+        window.set_child(&contents);
         window.show();
 
         let controller = gtk4::GestureClick::new();
@@ -49,7 +49,7 @@ impl NativeWindow<Platform> for Window {
     }
 
     fn replace_contents(&mut self, _platform: &mut Platform, child: gtk4::Widget) {
-        self.set_child(&child, 0.0, 0.0);
+        self.set_child(&child);
     }
 
     fn get_size(&self, _platform: &mut Platform) -> (f32, f32) {
@@ -184,14 +184,7 @@ impl NativeWindow<Platform> for Window {
         width: f32,
         height: f32,
     ) {
-        if let Some(child) = self.imp().fixed.first_child() {
-            self.imp().fixed.move_(&child, x as f64, y as f64);
-
-            child.set_size_request(
-                width.round() as i32,
-                height.round() as i32,
-            );
-        }
+        self.imp().group.layout(0, x, y, width, height);
     }
 
     fn set_min_size(&mut self, _platform: &mut Platform, width: f32, height: f32) {
@@ -266,7 +259,7 @@ impl Window {
         window.set_application(Some(application));
         gtk4::Window::set_child(
             window.as_ref(),
-            Some(&window.imp().fixed),
+            Some(&window.imp().group),
         );
 
         window
@@ -283,12 +276,12 @@ impl Window {
         let _ = self.imp().on_snapshot.replace(Box::new(on_snapshot));
     }
 
-    pub fn set_child(&self, child: &impl IsA<gtk4::Widget>, x: f32, y: f32) {
-        if let Some(child) = self.imp().fixed.first_child() {
-            self.imp().fixed.remove(&child);
+    pub fn set_child(&self, child: &impl IsA<gtk4::Widget>) {
+        if !self.imp().group.is_empty() {
+            self.imp().group.remove(0);
         }
 
-        self.imp().fixed.put(child, x as f64, y as f64);
+        self.imp().group.add(child.as_ref().clone());
     }
 }
 
@@ -299,18 +292,16 @@ mod imp {
     };
 
     use glib::subclass::{object::ObjectImpl, types::ObjectSubclass};
-    use gtk4::{
-        prelude::WidgetExt,
-        subclass::{
-            prelude::ApplicationWindowImpl,
-            widget::{WidgetImpl, WidgetImplExt},
-            window::WindowImpl,
-        },
+    use gtk4::subclass::{
+        prelude::ApplicationWindowImpl,
+        widget::{WidgetImpl, WidgetImplExt},
+        window::WindowImpl,
     };
 
+    use crate::widgets::Group;
+
     pub struct ApplicationWindow {
-        pub fixed:            gtk4::Fixed,
-        pub modals:           RefCell<Vec<gtk4::Widget>>,
+        pub group:            Group,
         pub on_size_allocate: RefCell<Box<dyn Fn()>>,
         pub on_snapshot:      RefCell<Box<dyn Fn()>>,
         pub previous_frame:   Rc<Cell<Option<i64>>>,
@@ -319,8 +310,7 @@ mod imp {
     impl Default for ApplicationWindow {
         fn default() -> Self {
             Self {
-                fixed:            gtk4::Fixed::new(),
-                modals:           RefCell::new(Vec::new()),
+                group:            Group::new(),
                 on_size_allocate: RefCell::new(Box::new(|| {})),
                 on_snapshot:      RefCell::new(Box::new(|| {})),
                 previous_frame:   Rc::new(Cell::new(None)),
@@ -336,21 +326,12 @@ mod imp {
     }
 
     impl ObjectImpl for ApplicationWindow {
-        fn dispose(&self) {
-            for modal in self.modals.borrow().iter() {
-                modal.unparent();
-            }
-        }
+        fn dispose(&self) {}
     }
 
     impl WidgetImpl for ApplicationWindow {
         fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
             self.parent_size_allocate(width, height, baseline);
-
-            for modal in self.modals.borrow().iter() {
-                let allocation = gtk4::Allocation::new(0, 0, width, height);
-                modal.size_allocate(&allocation, -1);
-            }
 
             let on_size_allocate = self.on_size_allocate.borrow();
             on_size_allocate();
@@ -358,10 +339,6 @@ mod imp {
 
         fn measure(&self, orientation: gtk4::Orientation, for_size: i32) -> (i32, i32, i32, i32) {
             self.parent_measure(orientation, for_size);
-
-            for modal in self.modals.borrow().iter() {
-                modal.measure(orientation, for_size);
-            }
 
             (0, 0, -1, -1)
         }

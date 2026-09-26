@@ -35,8 +35,7 @@ impl NativeGroup<Platform> for Group {
     }
 
     fn remove_child(&mut self, _platform: &mut Platform, index: usize) {
-        let child = self.imp().children.borrow_mut().remove(index);
-        child.widget.unparent();
+        Group::remove(self, index);
     }
 
     fn replace_child(&mut self, _platform: &mut Platform, index: usize, child: gtk4::Widget) {
@@ -80,18 +79,7 @@ impl NativeGroup<Platform> for Group {
         width: f32,
         height: f32,
     ) {
-        let x = x.round() as i32;
-        let y = y.round() as i32;
-        let width = width.round() as i32;
-        let height = height.round() as i32;
-
-        if let Some(child) = self.imp().children.borrow_mut().get_mut(index) {
-            child.x = x;
-            child.y = y;
-            child.widget.set_size_request(width, height);
-            child.widget.queue_allocate();
-            child.widget.queue_resize();
-        }
+        self.layout(index, x, y, width, height);
     }
 
     fn set_background_color(&mut self, _platform: &mut Platform, color: Color) {
@@ -142,6 +130,52 @@ glib::wrapper! {
 impl Group {
     pub fn new() -> Self {
         gtk4::glib::Object::builder().build()
+    }
+
+    pub fn get(&self, index: usize) -> Option<gtk4::Widget> {
+        self.imp()
+            .children
+            .borrow()
+            .get(index)
+            .map(|child| child.widget.clone())
+    }
+
+    pub fn add(&self, child: gtk4::Widget) {
+        child.set_parent(self);
+
+        self.imp().children.borrow_mut().push(imp::Child {
+            widget: child,
+            x:      0,
+            y:      0,
+        });
+    }
+
+    pub fn remove(&self, index: usize) {
+        let child = self.imp().children.borrow_mut().remove(index);
+        child.widget.unparent();
+    }
+
+    pub fn layout(&self, index: usize, x: f32, y: f32, width: f32, height: f32) {
+        let x = x.round() as i32;
+        let y = y.round() as i32;
+        let width = width.round() as i32;
+        let height = height.round() as i32;
+
+        if let Some(child) = self.imp().children.borrow_mut().get_mut(index) {
+            child.x = x;
+            child.y = y;
+            child.widget.set_size_request(width, height);
+            child.widget.queue_allocate();
+            child.widget.queue_resize();
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.imp().children.borrow().is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.imp().children.borrow().len()
     }
 }
 

@@ -52,7 +52,7 @@ where
                 (self.instance).assign_window_to_monitor(&window, &self.monitor);
                 window.set_size_request(1, 1);
 
-                window.set_child(&contents, 0.0, 0.0);
+                window.set_child(&contents);
                 window.show();
                 window
             },

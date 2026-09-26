@@ -219,7 +219,7 @@ where
                     }
                 }
 
-                window.set_child(&contents, 0.0, 0.0);
+                window.set_child(&contents);
                 window.show();
 
                 window
