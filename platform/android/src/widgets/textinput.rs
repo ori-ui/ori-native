@@ -3,7 +3,8 @@ use jni::{
     objects::{JObject, JString},
 };
 use ori_native_core::{
-    AvailableSpace, Font, Measurable, Newline, Size, TextAlign, TextWrap, native::NativeTextInput,
+    AvailableSpace, Font, Measurable, Newline, Size, Submit, TextAlign, TextInputEvent, TextWrap,
+    native::NativeTextInput,
 };
 
 use crate::{
@@ -17,11 +18,7 @@ pub struct TextInput {
 }
 
 impl NativeTextInput<Platform> for TextInput {
-    fn build(
-        platform: &mut Platform,
-        on_change: impl Fn(String) + 'static,
-        on_submit: impl Fn(String) + 'static,
-    ) -> Self {
+    fn build(platform: &mut Platform, on_event: impl Fn(TextInputEvent) + 'static) -> Self {
         let id = platform.next_id();
 
         let _ = platform.jni(|env, activity| {
@@ -35,14 +32,8 @@ impl NativeTextInput<Platform> for TextInput {
         });
 
         platform.add_handler(id, move |event| match event {
-            WidgetEvent::Change(text) => on_change(text.clone()),
-            WidgetEvent::Submit(_) => {}
-            _ => unreachable!(),
-        });
-
-        platform.add_handler(id, move |event| match event {
-            WidgetEvent::Submit(text) => on_submit(text.clone()),
-            WidgetEvent::Change(_) => {}
+            WidgetEvent::Change(text) => on_event(TextInputEvent::Changed(text.clone())),
+            WidgetEvent::Submit(..) => on_event(TextInputEvent::Submitted),
             _ => unreachable!(),
         });
 
@@ -58,7 +49,7 @@ impl NativeTextInput<Platform> for TextInput {
     }
 
     fn set_newline(&mut self, platform: &mut Platform, newline: Newline) {
-        let singleline = matches!(newline, Newline::None);
+        let singleline = matches!(newline, Newline::Never);
 
         let _ = platform.jni(|env, activity| {
             env.call_method(
@@ -69,6 +60,10 @@ impl NativeTextInput<Platform> for TextInput {
             )?
             .v()
         });
+    }
+
+    fn set_submit(&mut self, _platform: &mut Platform, _submit: Submit) {
+        tracing::warn!("set submit not implemented");
     }
 
     fn set_accept_tab(&mut self, _platform: &mut Platform, _accept_tab: bool) {}

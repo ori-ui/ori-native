@@ -1,7 +1,8 @@
 use std::convert::Infallible;
 
 use crate::{
-    Font, Measurable, Newline, Platform, TextAlign, TextWrap, Unsupported, platform::unsupported,
+    Font, Measurable, Newline, Platform, Submit, TextAlign, TextInputEvent, TextWrap, Unsupported,
+    platform::unsupported,
 };
 
 /// A native text input widget.
@@ -10,11 +11,7 @@ where
     P: Platform,
 {
     /// Build a text input widget.
-    fn build(
-        platform: &mut P,
-        on_change: impl Fn(String) + 'static,
-        on_submit: impl Fn(String) + 'static,
-    ) -> Self;
+    fn build(platform: &mut P, on_event: impl Fn(TextInputEvent) + 'static) -> Self;
 
     /// Teardown the widget.
     fn teardown(self, platform: &mut P);
@@ -24,6 +21,9 @@ where
 
     /// Set the `newline` behaviour.
     fn set_newline(&mut self, platform: &mut P, newline: Newline);
+
+    /// Set the `submit` behaviour.
+    fn set_submit(&mut self, platform: &mut P, submit: Submit);
 
     /// Set whether text input accepts and inserts tabs.
     fn set_accept_tab(&mut self, platform: &mut P, accept_tab: bool);
@@ -54,11 +54,7 @@ impl<P> NativeTextInput<P> for Unsupported
 where
     P: Platform,
 {
-    fn build(
-        _platform: &mut P,
-        _on_change: impl Fn(String) + 'static,
-        _on_submit: impl Fn(String) + 'static,
-    ) -> Self {
+    fn build(_platform: &mut P, _on_event: impl Fn(TextInputEvent) + 'static) -> Self {
         unsupported!("text input view")
     }
 
@@ -71,6 +67,10 @@ where
     }
 
     fn set_newline(&mut self, _platform: &mut P, _newline: Newline) {
+        unreachable!()
+    }
+
+    fn set_submit(&mut self, _platform: &mut P, _submit: Submit) {
         unreachable!()
     }
 

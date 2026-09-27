@@ -9,5 +9,8 @@ license.workspace = true
 proc-macro = true
 
 [dependencies]
-syn         = "3"
-quote       = "1"
+quote = "1"
+
+[dependencies.syn]
+version = "3"
+features = ["full"]

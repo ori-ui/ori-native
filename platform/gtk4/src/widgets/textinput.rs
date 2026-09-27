@@ -3,8 +3,8 @@ use std::{cell::Cell, rc::Rc};
 use glib::object::{Cast, ObjectExt};
 use gtk4::prelude::{TextBufferExt, TextViewExt, WidgetExt};
 use ori_native_core::{
-    AvailableSpace, Font, Measurable, Newline, Size, Stretch, TextAlign, TextWrap,
-    native::NativeTextInput,
+    AvailableSpace, Font, Measurable, Newline, Size, Stretch, Submit, TextAlign, TextInputEvent,
+    TextWrap, native::NativeTextInput,
 };
 
 use crate::{Platform, platform::StyleNode};
@@ -19,14 +19,11 @@ pub struct TextInput {
     font:             Font,
     placeholder_font: Font,
     newline:          Rc<Cell<Newline>>,
+    submit:           Rc<Cell<Submit>>,
 }
 
 impl NativeTextInput<Platform> for TextInput {
-    fn build(
-        platform: &mut Platform,
-        on_change: impl Fn(String) + 'static,
-        on_submit: impl Fn(String) + 'static,
-    ) -> Self {
+    fn build(platform: &mut Platform, on_event: impl Fn(TextInputEvent) + 'static) -> Self {
         let overlay = gtk4::Overlay::new();
         let view = gtk4::TextView::new();
         let placeholder = gtk4::TextView::new();
@@ -40,19 +37,24 @@ impl NativeTextInput<Platform> for TextInput {
         view.add_css_class(&view_style.class());
 
         let newline = Rc::new(Cell::new(Newline::Enter));
+        let submit = Rc::new(Cell::new(Submit::Nothing));
+        let on_event = Rc::new(on_event);
 
         let controller = gtk4::EventControllerFocus::new();
         controller.connect_enter({
             let placeholder = placeholder.clone();
+            let on_event = on_event.clone();
 
             move |_| {
                 placeholder.set_visible(false);
+                on_event(TextInputEvent::Focused(true));
             }
         });
 
         controller.connect_leave({
             let view = view.downgrade();
             let placeholder = placeholder.clone();
+            let on_event = on_event.clone();
 
             move |_| {
                 if let Some(view) = view.upgrade()
@@ -60,12 +62,16 @@ impl NativeTextInput<Platform> for TextInput {
                 {
                     placeholder.set_visible(true);
                 }
+
+                on_event(TextInputEvent::Focused(false));
             }
         });
 
         view.add_controller(controller);
 
         view.buffer().connect_text_notify({
+            let on_event = on_event.clone();
+
             move |buffer| {
                 let text = buffer.text(
                     &buffer.start_iter(),
@@ -81,33 +87,37 @@ impl NativeTextInput<Platform> for TextInput {
                     );
                 });
 
-                on_change(text.into());
+                on_event(TextInputEvent::Changed(text.into()));
             }
         });
 
         let controller = gtk4::EventControllerKey::new();
 
         controller.connect_key_pressed({
-            let enter = newline.clone();
-            let buffer = view.buffer();
+            let view = view.downgrade();
+            let newline = newline.clone();
+            let submit = submit.clone();
 
             move |_, key, _, state| {
                 let shift = state.contains(gdk4::ModifierType::SHIFT_MASK);
 
-                let can_submit = match enter.get() {
-                    Newline::None => true,
+                let can_submit = match newline.get() {
+                    Newline::Never => true,
                     Newline::ShiftEnter if !shift => true,
                     _ => false,
                 };
 
                 if key == gdk4::Key::Return && can_submit {
-                    let text = buffer.text(
-                        &buffer.start_iter(),
-                        &buffer.end_iter(),
-                        true,
-                    );
+                    on_event(TextInputEvent::Submitted);
 
-                    on_submit(text.into());
+                    match submit.get() {
+                        Submit::Nothing => {}
+                        Submit::Blur => {
+                            if let Some(view) = view.upgrade() {
+                                view.emit_move_focus(gtk4::DirectionType::TabForward);
+                            }
+                        }
+                    }
 
                     glib::Propagation::Stop
                 } else {
@@ -128,6 +138,7 @@ impl NativeTextInput<Platform> for TextInput {
             font: Default::default(),
             placeholder_font: Default::default(),
             newline,
+            submit,
         }
     }
 
@@ -141,6 +152,10 @@ impl NativeTextInput<Platform> for TextInput {
 
     fn set_newline(&mut self, _platform: &mut Platform, newline: Newline) {
         self.newline.set(newline);
+    }
+
+    fn set_submit(&mut self, _platform: &mut Platform, submit: Submit) {
+        self.submit.set(submit);
     }
 
     fn set_accept_tab(&mut self, _platform: &mut Platform, accept_tab: bool) {

@@ -3,8 +3,8 @@ use std::borrow::Cow;
 use ori::{Action, Message, Mut, Proxied, Proxy, Tracker, View, ViewId, ViewMarker};
 
 use crate::{
-    Color, Context, Font, Layout, LayoutStyle, Newline, Platform, Stretch, TextAlign, TextWrap,
-    Weight, widgets::TextInputWidget,
+    Color, Context, Font, Layout, LayoutStyle, Newline, Platform, Stretch, Submit, TextAlign,
+    TextWrap, Weight, event::TextInputEvent, widgets::TextInputWidget,
 };
 
 /// [`View`] of a text input.
@@ -26,10 +26,12 @@ pub struct TextInput<T> {
     wrap:  TextWrap,
 
     newline:    Newline,
+    submit:     Submit,
     accept_tab: bool,
-    on_change:  Box<dyn FnMut(&mut T, String) -> Action>,
-    on_submit:  Box<dyn FnMut(&mut T, String) -> Action>,
+    on_event:   Vec<BoxedCallback<T>>,
 }
+
+type BoxedCallback<T> = Box<dyn FnMut(&mut T, TextInputEvent) -> Action>;
 
 impl<T> Default for TextInput<T> {
     fn default() -> Self {
@@ -55,9 +57,9 @@ impl<T> TextInput<T> {
             wrap:  TextWrap::Word,
 
             newline:    Newline::Enter,
+            submit:     Submit::Blur,
             accept_tab: true,
-            on_change:  Box::new(|_, _| Action::new()),
-            on_submit:  Box::new(|_, _| Action::new()),
+            on_event:   Vec::new(),
         }
     }
 
@@ -181,28 +183,98 @@ impl<T> TextInput<T> {
         self
     }
 
+    /// Set the submit behaviour.
+    pub fn submit(mut self, submit: Submit) -> Self {
+        self.submit = submit;
+        self
+    }
+
     /// Set whether to accept `tab` inputs.
     pub fn accept_tab(mut self, accept_tab: bool) -> Self {
         self.accept_tab = accept_tab;
         self
     }
 
-    /// Set the callback for when the text changes.
-    pub fn on_change<A>(mut self, mut on_change: impl FnMut(&mut T, String) -> A + 'static) -> Self
-    where
-        A: Into<Action>,
-    {
-        self.on_change = Box::new(move |data, text| on_change(data, text).into());
+    /// Set the callback for all events.
+    pub fn on_event(
+        mut self,
+        on_event: impl FnMut(&mut T, TextInputEvent) -> Action + 'static,
+    ) -> Self {
+        self.on_event.push(Box::new(on_event));
         self
     }
 
-    /// Set the callback for when text is submitted.
-    pub fn on_submit<A>(mut self, mut on_submit: impl FnMut(&mut T, String) -> A + 'static) -> Self
+    /// Set the callback for when the text changes.
+    pub fn on_change<A>(self, mut on_change: impl FnMut(&mut T, String) -> A + 'static) -> Self
     where
         A: Into<Action>,
     {
-        self.on_submit = Box::new(move |data, text| on_submit(data, text).into());
-        self
+        self.on_event(move |data, event| match event {
+            TextInputEvent::Changed(text) => on_change(data, text).into(),
+            _ => Action::new(),
+        })
+    }
+
+    /// Set the callback for when text is submitted.
+    pub fn on_submit<A>(self, mut on_submit: impl FnMut(&mut T, String) -> A + 'static) -> Self
+    where
+        A: Into<Action>,
+    {
+        let mut text = self.text.clone().unwrap_or_default();
+
+        self.on_event(move |data, event| match event {
+            TextInputEvent::Changed(new_text) => {
+                text = new_text;
+                Action::new()
+            }
+
+            TextInputEvent::Submitted => on_submit(data, text.clone()).into(),
+
+            _ => Action::new(),
+        })
+    }
+
+    /// Set the callback for when the textinput is focused.
+    pub fn on_focus<A>(self, mut on_focus: impl FnMut(&mut T) -> A + 'static) -> Self
+    where
+        A: Into<Action>,
+    {
+        self.on_event(move |data, event| match event {
+            TextInputEvent::Focused(true) => on_focus(data).into(),
+            _ => Action::new(),
+        })
+    }
+
+    /// Set the callback for when the textinput is unfocused.
+    pub fn on_blur<A>(self, mut on_blur: impl FnMut(&mut T) -> A + 'static) -> Self
+    where
+        A: Into<Action>,
+    {
+        self.on_event(move |data, event| match event {
+            TextInputEvent::Focused(false) => on_blur(data).into(),
+            _ => Action::new(),
+        })
+    }
+
+    /// Set the callback for when text has been edited.
+    pub fn on_edited<A>(self, mut on_edited: impl FnMut(&mut T, String) -> A + 'static) -> Self
+    where
+        A: Into<Action>,
+    {
+        let mut text = self.text.clone().unwrap_or_default();
+
+        self.on_event(move |data, event| match event {
+            TextInputEvent::Changed(new_text) => {
+                text = new_text;
+                Action::new()
+            }
+
+            TextInputEvent::Focused(false) | TextInputEvent::Submitted => {
+                on_edited(data, text.clone()).into()
+            }
+
+            _ => Action::new(),
+        })
     }
 }
 
@@ -210,11 +282,6 @@ impl<T> Layout for TextInput<T> {
     fn get_layout_style_mut(&mut self) -> &mut LayoutStyle {
         &mut self.layout
     }
-}
-
-enum TextInputMessage {
-    Change(String),
-    Submit(String),
 }
 
 impl<T> ViewMarker for TextInput<T> {}
@@ -229,29 +296,12 @@ where
         let view_id = ViewId::next();
         cx.register(view_id);
 
-        let on_change = {
+        let on_event = {
             let proxy = cx.proxy();
-
-            move |text| {
-                proxy.message(Message::new(
-                    TextInputMessage::Change(text),
-                    view_id,
-                ));
-            }
+            move |event| proxy.message(Message::new(event, view_id))
         };
 
-        let on_submit = {
-            let proxy = cx.proxy();
-
-            move |text| {
-                proxy.message(Message::new(
-                    TextInputMessage::Submit(text),
-                    view_id,
-                ));
-            }
-        };
-
-        let mut widget = TextInputWidget::new(cx, on_change, on_submit);
+        let mut widget = TextInputWidget::new(cx, on_event);
         widget.set_layout(cx, self.layout);
         widget.set_font(
             cx,
@@ -275,6 +325,7 @@ where
         widget.update_layout(cx);
 
         widget.set_newline(cx, self.newline);
+        widget.set_submit(cx, self.submit);
         widget.set_accept_tab(cx, self.accept_tab);
 
         let state = TextInputState {
@@ -290,11 +341,11 @@ where
             wrap: self.wrap,
 
             newline: self.newline,
+            submit: self.submit,
             accept_tab: self.accept_tab,
 
             view_id,
-            on_change: self.on_change,
-            on_submit: self.on_submit,
+            on_event: self.on_event,
         };
 
         (widget, state)
@@ -357,6 +408,11 @@ where
             element.set_newline(cx, self.newline);
         }
 
+        if state.submit != self.submit {
+            state.submit = self.submit;
+            element.set_submit(cx, self.submit);
+        }
+
         if state.accept_tab != self.accept_tab {
             state.accept_tab = self.accept_tab;
             element.set_accept_tab(cx, self.accept_tab);
@@ -366,8 +422,7 @@ where
             element.update_layout(cx);
         }
 
-        state.on_change = self.on_change;
-        state.on_submit = self.on_submit;
+        state.on_event = self.on_event;
     }
 
     fn message(
@@ -377,15 +432,18 @@ where
         data: &mut T,
         message: &mut Message,
     ) -> Action {
-        if let Some(message) = message.take(state.view_id) {
-            match message {
-                TextInputMessage::Change(text) => {
-                    state.text = text.clone();
-                    (state.on_change)(data, text)
-                }
-
-                TextInputMessage::Submit(text) => (state.on_submit)(data, text),
+        if let Some(event) = message.take::<TextInputEvent>(state.view_id) {
+            if let TextInputEvent::Changed(ref text) = event {
+                state.text = text.clone();
             }
+
+            let mut action = Action::new();
+
+            for on_event in state.on_event.iter_mut() {
+                action |= on_event(data, event.clone());
+            }
+
+            action
         } else {
             Action::new()
         }
@@ -411,9 +469,9 @@ pub struct TextInputState<T> {
     wrap:  TextWrap,
 
     newline:    Newline,
+    submit:     Submit,
     accept_tab: bool,
 
-    view_id:   ViewId,
-    on_change: Box<dyn FnMut(&mut T, String) -> Action>,
-    on_submit: Box<dyn FnMut(&mut T, String) -> Action>,
+    view_id:  ViewId,
+    on_event: Vec<BoxedCallback<T>>,
 }

@@ -46,17 +46,11 @@ impl<T, F> Pressable<T, F> {
     }
 
     /// Set the callback for all events.
-    pub fn on_event<A>(
+    pub fn on_event(
         mut self,
-        mut on_event: impl FnMut(&mut T, PressableEvent) -> A + 'static,
-    ) -> Self
-    where
-        A: Into<Action>,
-    {
-        self.on_event.push(Box::new(move |data, event| {
-            on_event(data, event).into()
-        }));
-
+        on_event: impl FnMut(&mut T, PressableEvent) -> Action + 'static,
+    ) -> Self {
+        self.on_event.push(Box::new(on_event));
         self
     }
 

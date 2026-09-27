@@ -19,7 +19,7 @@ pub mod views;
 pub mod widgets;
 
 pub use context::{BoxedEffect, Context};
-pub use event::{Button, MoveEvent, PressEvent, PressableEvent};
+pub use event::{Button, MoveEvent, PressEvent, PressableEvent, TextInputEvent};
 pub use input::{Input, InputFilter, InputHandler, InputMessage, MatchKey};
 pub use layout::{
     Allocation, AvailableSpace, CachedMeasurable, LayoutNode, LayoutTree, Measurable,
@@ -30,7 +30,7 @@ pub use safearea::SafeAreaInsets;
 pub use style::{
     Affine, Align, Border, BorderStyle, Color, Corners, Direction, FlexContainer, FlexStyle, Fract,
     Justify, Layout, LayoutStyle, Length, NavigationBar, Newline, Overflow, Padding, Point,
-    PopupPosition, Position, Shadow, Side, Sides, Size, Sizing, StatusBar,
+    PopupPosition, Position, Shadow, Side, Sides, Size, Sizing, StatusBar, Submit,
 };
 pub use text::{Font, Stretch, TextAlign, TextSpan, TextWrap, Weight};
 pub use widget::{BoxedWidget, Parent, Widget, WidgetMut, WidgetView, WidgetViewSeq};

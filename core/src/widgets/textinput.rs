@@ -3,8 +3,8 @@ use std::time::Duration;
 use ori::Element;
 
 use crate::{
-    CachedMeasurable, Context, Font, LayoutNode, LayoutStyle, Newline, Platform, TextAlign,
-    TextWrap, Widget, native::NativeTextInput, widget::WidgetMut,
+    CachedMeasurable, Context, Font, LayoutNode, LayoutStyle, Newline, Platform, Submit, TextAlign,
+    TextInputEvent, TextWrap, Widget, native::NativeTextInput, widget::WidgetMut,
 };
 
 /// A [`Widget`] that handles text input.
@@ -21,12 +21,8 @@ where
     P: Platform,
 {
     /// Create new [`TextInputWidget`].
-    pub fn new(
-        cx: &mut Context<P>,
-        on_change: impl Fn(String) + 'static,
-        on_submit: impl Fn(String) + 'static,
-    ) -> Self {
-        let native = P::TextInput::build(&mut cx.platform, on_change, on_submit);
+    pub fn new(cx: &mut Context<P>, on_event: impl Fn(TextInputEvent) + 'static) -> Self {
+        let native = P::TextInput::build(&mut cx.platform, on_event);
         let layout = cx.layout.add_node(&[]);
 
         Self { native, layout }
@@ -72,6 +68,11 @@ where
     /// Set the `newline` behaviour.
     pub fn set_newline(&mut self, cx: &mut Context<P>, newline: Newline) {
         self.native.set_newline(&mut cx.platform, newline);
+    }
+
+    /// Set the `submit` behaviour.
+    pub fn set_submit(&mut self, cx: &mut Context<P>, submit: Submit) {
+        self.native.set_submit(&mut cx.platform, submit);
     }
 
     /// Set whether to accept tabs.

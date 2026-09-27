@@ -60,3 +60,16 @@ pub enum PressableEvent {
     /// The view changed focused state.
     Focused(bool),
 }
+
+/// An event that can happend to a [`textinput`](crate::views::textinput).
+#[derive(Clone, Debug, PartialEq)]
+pub enum TextInputEvent {
+    /// The text has changed.
+    Changed(String),
+
+    /// The user has submitted the input.
+    Submitted,
+
+    /// The focus has changed.
+    Focused(bool),
+}

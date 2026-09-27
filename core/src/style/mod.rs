@@ -17,6 +17,6 @@ pub use layout::{
 pub use overflow::Overflow;
 pub use popup::{PopupPosition, Side};
 pub use shadow::Shadow;
-pub use textinput::Newline;
+pub use textinput::{Newline, Submit};
 pub use transform::Affine;
 pub use window::Sizing;
