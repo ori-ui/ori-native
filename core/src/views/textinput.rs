@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use ori::{Action, Message, Mut, Proxied, Proxy, Tracker, View, ViewId, ViewMarker};
+use ori::{Action, Message, Mut, Proxied, Proxy, Tracked, View, ViewId, ViewMarker};
 
 use crate::{
     Color, Context, Font, Layout, LayoutStyle, Newline, Platform, Stretch, Submit, TextAlign,

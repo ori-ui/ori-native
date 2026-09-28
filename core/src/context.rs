@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use ori::{Action, AnyView, Base, Message, Provider, Proxied, Proxy, Tracker, Tree};
+use ori::{Action, AnyView, Base, Message, Provider, Proxied, Proxy, Tracked, Tree};
 
 use crate::{AnimateRequest, BoxedWidget, LayoutNode, LayoutTree, Platform};
 
@@ -73,7 +73,7 @@ where
     type Element = BoxedWidget<P>;
 }
 
-impl<P> Tracker for Context<P>
+impl<P> Tracked for Context<P>
 where
     P: Platform,
 {
