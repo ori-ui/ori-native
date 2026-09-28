@@ -18,6 +18,7 @@ fn ui(_data: &Data) -> impl Effect<Data> + use<> {
 
     window(with(
         |_| None::<Menu>,
+        |_, _| {},
         |_, _| {
             pressable(|(menu, _): &(Option<Menu>, _), _| {
                 popup(

@@ -55,7 +55,7 @@ pub mod views {
 /// Commonly used imports.
 pub mod prelude {
     pub use crate::{
-        Action, Align, App, Border, BoxedView, BuildMarker, BuildView, Button, Color, Context,
+        Action, Align, App, Border, BoxedView, Builder, BuilderMarker, Button, Color, Context,
         Corners, Direction, Effect, Element, FlexContainer, Font, Fract, Justify, Key, Layout,
         Length, Message, Modifiers, NamedKey, NavigationBar, Newline, Overflow, Padding, Position,
         PressableEvent, Proxy, SafeAreaInsets, Shadow, Side, Sides, Size, Sizing, StatusBar,

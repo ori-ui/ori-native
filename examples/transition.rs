@@ -55,9 +55,9 @@ impl<V, F> Layout for Button<V, F> {
     }
 }
 
-// implementing `BuildView` allows `Button` to be used as a `View`
-impl<V, F> BuildMarker for Button<V, F> {}
-impl<T, V, F, A> BuildView<Context, T> for Button<V, F>
+// implementing `Builder` allows `Button` to be used as a `View`
+impl<V, F> BuilderMarker for Button<V, F> {}
+impl<T, V, F, A> Builder<Context, T> for Button<V, F>
 where
     T: 'static,
     V: View<T> + 'static,

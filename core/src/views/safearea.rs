@@ -1,4 +1,4 @@
-use ori::{AnyView, Base, BuildMarker, BuildView, views};
+use ori::{AnyView, Base, Builder, BuilderMarker, views};
 
 use crate::{
     Context, Layout, LayoutStyle, Length, Padding, Platform, SafeAreaInsets, Sides, WidgetView,
@@ -32,8 +32,8 @@ impl<V> Layout for SafeArea<V> {
     }
 }
 
-impl<V> BuildMarker for SafeArea<V> {}
-impl<P, T, V> BuildView<Context<P>, T> for SafeArea<V>
+impl<V> BuilderMarker for SafeArea<V> {}
+impl<P, T, V> Builder<Context<P>, T> for SafeArea<V>
 where
     P: Platform,
     T: 'static,
