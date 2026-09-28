@@ -40,7 +40,7 @@ impl NativePressable<Platform> for Pressable {
         });
 
         platform.add_handler(id, move |event| match event {
-            WidgetEvent::Press(evnet) => on_event(evnet.clone()),
+            WidgetEvent::Pressable(evnet) => on_event(evnet.clone()),
             _ => unreachable!(),
         });
 
@@ -110,7 +110,7 @@ extern "system" fn Java_ori_OriPressable_onPress<'local>(
 
     GlobalState::event(
         WidgetId::new(id as u64),
-        WidgetEvent::Press(event),
+        WidgetEvent::Pressable(event),
     );
 
     true
@@ -132,7 +132,7 @@ extern "system" fn Java_ori_OriPressable_onMove<'local>(
 
     GlobalState::event(
         WidgetId::new(id as u64),
-        WidgetEvent::Press(event),
+        WidgetEvent::Pressable(event),
     );
 
     true

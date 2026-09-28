@@ -32,8 +32,7 @@ impl NativeTextInput<Platform> for TextInput {
         });
 
         platform.add_handler(id, move |event| match event {
-            WidgetEvent::Change(text) => on_event(TextInputEvent::Changed(text.clone())),
-            WidgetEvent::Submit(..) => on_event(TextInputEvent::Submitted),
+            WidgetEvent::TextInput(event) => on_event(event.clone()),
             _ => unreachable!(),
         });
 
@@ -62,19 +61,26 @@ impl NativeTextInput<Platform> for TextInput {
         });
     }
 
-    fn set_submit(&mut self, _platform: &mut Platform, _submit: Submit) {
-        tracing::warn!("set submit not implemented");
+    fn set_submit(&mut self, platform: &mut Platform, submit: Submit) {
+        let _ = platform.jni(|env, activity| {
+            let options = match submit {
+                Submit::Nothing => 0x00000006,
+                Submit::Blur => 0x00000005,
+            };
+
+            env.call_method(
+                activity,
+                jni_str!("textInputSetImeOptions"),
+                jni_sig!((long, int) -> void),
+                &[self.id.into(), options.into()],
+            )?
+            .v()
+        });
     }
 
     fn set_accept_tab(&mut self, _platform: &mut Platform, _accept_tab: bool) {}
 
-    fn set_font(
-        &mut self,
-        platform: &mut Platform,
-        font: Font,
-        _align: TextAlign,
-        _wrap: TextWrap,
-    ) {
+    fn set_font(&mut self, platform: &mut Platform, font: Font, align: TextAlign, _wrap: TextWrap) {
         let _ = platform.jni(|env, activity| {
             let family = match font.family {
                 Some(family) => env.new_string(family)?,
@@ -91,6 +97,8 @@ impl NativeTextInput<Platform> for TextInput {
                         JString,
                         int,
                         int,
+                        int,
+                        int,
                         boolean,
                         boolean,
                         float,
@@ -105,6 +113,8 @@ impl NativeTextInput<Platform> for TextInput {
                     (&family).into(),
                     (font.weight.0 as i32).into(),
                     0i32.into(),
+                    0i32.into(),
+                    text_align_to_gravity(align).into(),
                     font.italic.into(),
                     font.striketrough.into(),
                     font.color.r.into(),
@@ -135,7 +145,7 @@ impl NativeTextInput<Platform> for TextInput {
         &mut self,
         platform: &mut Platform,
         font: Font,
-        _align: TextAlign,
+        align: TextAlign,
         _wrap: TextWrap,
     ) {
         let _ = platform.jni(|env, activity| {
@@ -154,6 +164,8 @@ impl NativeTextInput<Platform> for TextInput {
                         JString,
                         int,
                         int,
+                        int,
+                        int,
                         boolean,
                         boolean,
                         float,
@@ -168,6 +180,8 @@ impl NativeTextInput<Platform> for TextInput {
                     (&family).into(),
                     (font.weight.0 as i32).into(),
                     0i32.into(),
+                    0i32.into(),
+                    text_align_to_gravity(align).into(),
                     font.italic.into(),
                     font.striketrough.into(),
                     font.color.r.into(),
@@ -232,6 +246,15 @@ impl Measurable<Platform> for TextInputLayout {
     }
 }
 
+fn text_align_to_gravity(align: TextAlign) -> i32 {
+    match align {
+        TextAlign::Start => 0x00800003,   // Gravity.START
+        TextAlign::Center => 0x00000011,  // Gravity.CENTER
+        TextAlign::End => 0x00800005,     // Gravity.END
+        TextAlign::Justify => 0x00000077, // Gravity.FILL
+    }
+}
+
 #[unsafe(no_mangle)]
 extern "system" fn Java_ori_OriEditText_onChange<'local>(
     _env: EnvUnowned<'local>,
@@ -242,7 +265,7 @@ extern "system" fn Java_ori_OriEditText_onChange<'local>(
     let text = text.to_string();
     GlobalState::event(
         WidgetId::new(id as u64),
-        WidgetEvent::Change(text),
+        WidgetEvent::TextInput(TextInputEvent::Changed(text)),
     );
 }
 
@@ -251,11 +274,22 @@ extern "system" fn Java_ori_OriEditText_onSubmit<'local>(
     _env: EnvUnowned<'local>,
     _this: JObject<'local>,
     id: i64,
-    text: JString<'local>,
 ) {
-    let text = text.to_string();
     GlobalState::event(
         WidgetId::new(id as u64),
-        WidgetEvent::Submit(text),
+        WidgetEvent::TextInput(TextInputEvent::Submitted),
+    );
+}
+
+#[unsafe(no_mangle)]
+extern "system" fn Java_ori_OriEditText_onFocus<'local>(
+    _env: EnvUnowned<'local>,
+    _this: JObject<'local>,
+    id: i64,
+    focused: bool,
+) {
+    GlobalState::event(
+        WidgetId::new(id as u64),
+        WidgetEvent::TextInput(TextInputEvent::Focused(focused)),
     );
 }

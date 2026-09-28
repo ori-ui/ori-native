@@ -9,7 +9,7 @@ use std::{
 
 use jni::{objects::JObject, refs::Global, vm::JavaVM};
 use ori::{Action, Effect, Message, Provider, Proxied};
-use ori_native_core::{Context, PressableEvent, SafeAreaInsets, Sides};
+use ori_native_core::{Context, PressableEvent, SafeAreaInsets, Sides, TextInputEvent};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt};
 
 use crate::{Platform, log::MakeAndroidWriter, platform::WidgetId};
@@ -143,9 +143,8 @@ pub enum Event {
 
 #[derive(Debug)]
 pub enum WidgetEvent {
-    Press(PressableEvent),
-    Change(String),
-    Submit(String),
+    Pressable(PressableEvent),
+    TextInput(TextInputEvent),
     Scroll(f32, f32),
     Position(f32, f32),
 }
