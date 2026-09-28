@@ -7,8 +7,8 @@
 
 let
   androidComposition = pkgs.androidenv.composeAndroidPackages {
-    buildToolsVersions = [ "36.0.0" "35.0.0" "34.0.0" "33.0.1" ];
-    platformVersions = [ "36" "35" "34" "33" "31" "28" ];
+    buildToolsVersions = [ "37.0.0" "36.0.0" "35.0.0" ];
+    platformVersions = [ "37" "36" "35" ];
     abiVersions = [ "armeabi-v7a" "arm64-v8a" ];
     ndkVersions = [ "27.3.13750724" ];
     includeNDK = true;
@@ -26,7 +26,7 @@ in  pkgs.mkShell rec {
   ];
 
   ANDROID_SDK_ROOT = "${androidSdk}/libexec/android-sdk";
-  GRADLE_OPTS = "-Dorg.gradle.project.android.aapt2FromMavenOverride=${androidSdk}/libexec/android-sdk/build-tools/36.0.0/aapt2";
+  GRADLE_OPTS = "-Dorg.gradle.project.android.aapt2FromMavenOverride=${androidSdk}/libexec/android-sdk/build-tools/37.0.0/aapt2";
 
   LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
 }
