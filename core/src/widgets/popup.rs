@@ -54,7 +54,7 @@ where
 
     /// Open the popup.
     ///
-    /// Should only be called once until [`close`] is called.
+    /// Should only be called once until [`Self::close`] is called.
     pub fn open(&mut self, cx: &mut Context<P>, contents: U) {
         debug_assert!(self.contents.is_none());
 
@@ -64,7 +64,7 @@ where
 
     /// Close the popup.
     ///
-    /// Should only be called once be called once after [`open`].
+    /// Should only be called once be called once after [`Self::open`].
     pub fn close(&mut self, cx: &mut Context<P>) -> Option<U> {
         debug_assert!(self.contents.is_some());
 
