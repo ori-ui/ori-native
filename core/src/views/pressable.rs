@@ -2,8 +2,8 @@ use keyboard_types::Modifiers;
 use ori::{Action, Message, Mut, Proxied, Proxy, Tracked, View, ViewId, ViewMarker};
 
 use crate::{
-    Context, Input, InputHandler, MatchKey, Platform, PressEvent, PressableEvent, WidgetView,
-    event::MoveEvent, widget::WidgetMut, widgets::PressableWidget,
+    Context, Input, InputHandler, MatchKey, Platform, PressEvent, PressableEvent, ScrollEvent,
+    WidgetView, event::MoveEvent, widget::WidgetMut, widgets::PressableWidget,
 };
 
 /// [`View`] that reacts to presses and focus.
@@ -49,6 +49,18 @@ impl<T, F> Pressable<T, F> {
         }
     }
 
+    /// Set whether the view is focusable.
+    pub fn focusable(mut self, focusable: bool) -> Self {
+        self.focusable = focusable;
+        self
+    }
+
+    /// Set whether the view is scrollable.
+    pub fn scrollable(mut self, scrollable: bool) -> Self {
+        self.scrollable = scrollable;
+        self
+    }
+
     /// Set the callback for all events.
     pub fn on_event(
         mut self,
@@ -81,25 +93,31 @@ impl<T, F> Pressable<T, F> {
     }
 
     /// Set the callback for when the [`View`] is focused.
+    ///
+    /// This also sets [`focusable`](Self::focusable).
     pub fn on_focus<A>(self, mut on_focus: impl FnMut(&mut T) -> A + 'static) -> Self
     where
         A: Into<Action>,
     {
-        self.on_event(move |data, event| match event {
-            PressableEvent::Focused(focused) if focused => on_focus(data).into(),
-            _ => Action::new(),
-        })
+        self.focusable(true)
+            .on_event(move |data, event| match event {
+                PressableEvent::Focused(focused) if focused => on_focus(data).into(),
+                _ => Action::new(),
+            })
     }
 
     /// Set the callback for when the [`View`] is blurred (unfocused).
+    ///
+    /// This also sets [`focusable`](Self::focusable).
     pub fn on_blur<A>(self, mut on_blur: impl FnMut(&mut T) -> A + 'static) -> Self
     where
         A: Into<Action>,
     {
-        self.on_event(move |data, event| match event {
-            PressableEvent::Focused(focused) if !focused => on_blur(data).into(),
-            _ => Action::new(),
-        })
+        self.focusable(true)
+            .on_event(move |data, event| match event {
+                PressableEvent::Focused(focused) if !focused => on_blur(data).into(),
+                _ => Action::new(),
+            })
     }
 
     /// Set the callback for when the pointer is pressed down over the [`View`].
@@ -133,6 +151,20 @@ impl<T, F> Pressable<T, F> {
             PressableEvent::Released(event) => on_up(data, event).into(),
             _ => Action::new(),
         })
+    }
+
+    /// Set the callback for when the view is scrolled.
+    ///
+    /// This also sets [`scrollable`](Self::scrollable).
+    pub fn on_scroll<A>(self, mut on_scroll: impl FnMut(&mut T, ScrollEvent) -> A + 'static) -> Self
+    where
+        A: Into<Action>,
+    {
+        self.scrollable(true)
+            .on_event(move |data, event| match event {
+                PressableEvent::Scrolled(event) => on_scroll(data, event).into(),
+                _ => Action::new(),
+            })
     }
 
     /// Set a callback for when `key` is pressed.

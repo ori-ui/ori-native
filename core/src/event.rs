@@ -20,8 +20,11 @@ pub struct MoveEvent {
 /// An event emitted then a scroll wheel is turned.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ScrollEvent {
-    /// The amount of scroll.
-    pub delta: Point<f32>,
+    /// The amount of horizontal scroll.
+    pub dx: f32,
+
+    /// The amount of vertical scroll.
+    pub dy: f32,
 }
 
 /// A pointer button.

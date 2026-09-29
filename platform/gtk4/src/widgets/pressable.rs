@@ -140,10 +140,8 @@ impl NativePressable<Platform> for Pressable {
 
             move |_, dx, dy| {
                 on_event(PressableEvent::Scrolled(ScrollEvent {
-                    delta: Point {
-                        x: dx as f32,
-                        y: dy as f32,
-                    },
+                    dx: dx as f32,
+                    dy: dy as f32,
                 }));
 
                 if scroll.get() {
