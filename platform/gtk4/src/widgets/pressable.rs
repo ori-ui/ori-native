@@ -139,12 +139,12 @@ impl NativePressable<Platform> for Pressable {
             let scroll = scroll.clone();
 
             move |_, dx, dy| {
-                on_event(PressableEvent::Scrolled(ScrollEvent {
-                    dx: dx as f32,
-                    dy: dy as f32,
-                }));
-
                 if scroll.get() {
+                    on_event(PressableEvent::Scrolled(ScrollEvent {
+                        dx: dx as f32,
+                        dy: dy as f32,
+                    }));
+
                     glib::Propagation::Stop
                 } else {
                     glib::Propagation::Proceed
