@@ -97,7 +97,7 @@ impl NativePressable<Platform> for Pressable {
                         on_event(PressableEvent::Hovered(true));
                         hovered.set(true);
                     }
-                } else if !hovered.get() {
+                } else if hovered.get() {
                     on_event(PressableEvent::Hovered(false));
                     hovered.set(false);
                 }
