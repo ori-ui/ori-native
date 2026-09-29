@@ -3,14 +3,16 @@ use std::{cell::Cell, rc::Rc};
 use glib::object::{Cast, ObjectExt};
 use gtk4::prelude::{FixedExt, GestureExt, GestureSingleExt, WidgetExt};
 use ori_native_core::{
-    Button, Key, Modifiers, MoveEvent, Point, PressEvent, PressableEvent, native::NativePressable,
+    Button, Key, Modifiers, MoveEvent, Point, PressEvent, PressableEvent, ScrollEvent,
+    native::NativePressable,
 };
 
 use crate::{Platform, key};
 
 pub struct Pressable {
-    fixed: gtk4::Fixed,
-    key:   Option<gtk4::EventControllerKey>,
+    fixed:  gtk4::Fixed,
+    scroll: Rc<Cell<bool>>,
+    key:    Option<gtk4::EventControllerKey>,
 }
 
 impl NativePressable<Platform> for Pressable {
@@ -23,6 +25,8 @@ impl NativePressable<Platform> for Pressable {
         fixed.put(&contents, 0.0, 0.0);
         fixed.set_focusable(true);
         fixed.set_overflow(gtk4::Overflow::Visible);
+
+        let scroll = Rc::new(Cell::new(false));
 
         let on_event = Rc::new(on_event);
         let controller = gtk4::GestureClick::new();
@@ -127,6 +131,31 @@ impl NativePressable<Platform> for Pressable {
 
         fixed.add_controller(controller);
 
+        let controller =
+            gtk4::EventControllerScroll::new(gtk4::EventControllerScrollFlags::BOTH_AXES);
+
+        controller.connect_scroll({
+            let on_event = on_event.clone();
+            let scroll = scroll.clone();
+
+            move |_, dx, dy| {
+                on_event(PressableEvent::Scrolled(ScrollEvent {
+                    delta: Point {
+                        x: dx as f32,
+                        y: dy as f32,
+                    },
+                }));
+
+                if scroll.get() {
+                    glib::Propagation::Stop
+                } else {
+                    glib::Propagation::Proceed
+                }
+            }
+        });
+
+        fixed.add_controller(controller);
+
         let controller = gtk4::EventControllerFocus::new();
         controller.connect_enter({
             let on_event = on_event.clone();
@@ -140,7 +169,11 @@ impl NativePressable<Platform> for Pressable {
 
         fixed.add_controller(controller);
 
-        Self { fixed, key: None }
+        Self {
+            fixed,
+            scroll,
+            key: None,
+        }
     }
 
     fn teardown(self, _platform: &mut Platform) {}
@@ -164,6 +197,14 @@ impl NativePressable<Platform> for Pressable {
                 height.round() as i32,
             );
         }
+    }
+
+    fn set_scrollable(&mut self, _platform: &mut Platform, scrollable: bool) {
+        self.scroll.set(scrollable);
+    }
+
+    fn set_focusable(&mut self, _platform: &mut Platform, focusable: bool) {
+        self.fixed.set_focusable(focusable);
     }
 
     fn set_on_key(

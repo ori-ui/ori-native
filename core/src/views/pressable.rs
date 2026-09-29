@@ -28,9 +28,11 @@ pub struct PressState {
 
 /// [`View`] that reacts to presses and focus.
 pub struct Pressable<T, F> {
-    build:    F,
-    on_event: Vec<BoxedCallback<T>>,
-    input:    Input<T>,
+    build:      F,
+    scrollable: bool,
+    focusable:  bool,
+    on_event:   Vec<BoxedCallback<T>>,
+    input:      Input<T>,
 }
 
 type BoxedCallback<T> = Box<dyn FnMut(&mut T, PressableEvent) -> Action>;
@@ -40,6 +42,8 @@ impl<T, F> Pressable<T, F> {
     pub fn new(build: F) -> Self {
         Self {
             build,
+            scrollable: false,
+            focusable: false,
             on_event: Vec::new(),
             input: Input::new(),
         }
@@ -179,8 +183,10 @@ where
 
         let mut widget = PressableWidget::new(cx, contents, on_event);
 
-        let (filter, handler) = self.input.split();
+        widget.set_scrollable(cx, self.scrollable);
+        widget.set_focusable(cx, self.focusable);
 
+        let (filter, handler) = self.input.split();
         let proxy = cx.proxy();
 
         widget.set_on_key(cx, move |key, modifiers, pressed| {
@@ -196,6 +202,8 @@ where
             view_id,
             state,
             press,
+            scrollable: self.scrollable,
+            focusable: self.focusable,
             build: self.build,
             on_event: self.on_event,
             handler,
@@ -234,6 +242,16 @@ where
             }
         });
 
+        if state.scrollable != self.scrollable {
+            state.scrollable = self.scrollable;
+            element.set_scrollable(cx, self.scrollable);
+        }
+
+        if state.focusable != self.focusable {
+            state.focusable = self.focusable;
+            element.set_focusable(cx, self.focusable);
+        }
+
         state.build = self.build;
         state.on_event = self.on_event;
         state.handler = handler;
@@ -264,6 +282,8 @@ where
                 }
 
                 PressableEvent::Moved(_) => {}
+
+                PressableEvent::Scrolled(_) => {}
 
                 PressableEvent::Hovered(hovered) => {
                     press.hovered = hovered;
@@ -316,10 +336,12 @@ where
     P: Platform,
     V: WidgetView<P, T>,
 {
-    view_id:  ViewId,
-    state:    V::State,
-    press:    PressState,
-    build:    F,
-    on_event: Vec<BoxedCallback<T>>,
-    handler:  InputHandler<T>,
+    view_id:    ViewId,
+    state:      V::State,
+    press:      PressState,
+    build:      F,
+    scrollable: bool,
+    focusable:  bool,
+    on_event:   Vec<BoxedCallback<T>>,
+    handler:    InputHandler<T>,
 }

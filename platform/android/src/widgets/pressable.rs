@@ -79,6 +79,9 @@ impl NativePressable<Platform> for Pressable {
         });
     }
 
+    fn set_scrollable(&mut self, _platform: &mut Platform, _scrollable: bool) {}
+    fn set_focusable(&mut self, _platform: &mut Platform, _focusable: bool) {}
+
     fn set_on_key(
         &mut self,
         _platform: &mut Platform,

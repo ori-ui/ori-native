@@ -26,6 +26,12 @@ where
     /// Set the size of the contents.
     fn set_content_size(&mut self, platform: &mut P, width: f32, height: f32);
 
+    /// Set whether the widget is scrollable.
+    fn set_scrollable(&mut self, platform: &mut P, scrollable: bool);
+
+    /// Set whether the widget is focusable.
+    fn set_focusable(&mut self, platform: &mut P, focusable: bool);
+
     /// Set the `on_key` callback.
     fn set_on_key(
         &mut self,
@@ -59,6 +65,14 @@ where
     }
 
     fn set_content_size(&mut self, _platform: &mut P, _width: f32, _height: f32) {
+        unreachable!()
+    }
+
+    fn set_scrollable(&mut self, _platform: &mut P, _scrollable: bool) {
+        unreachable!()
+    }
+
+    fn set_focusable(&mut self, _platform: &mut P, _focusable: bool) {
         unreachable!()
     }
 

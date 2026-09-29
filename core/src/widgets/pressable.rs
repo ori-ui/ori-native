@@ -60,6 +60,16 @@ where
         (parent, &mut self.contents)
     }
 
+    /// Set whether the widget is scrollable.
+    pub fn set_scrollable(&mut self, cx: &mut Context<P>, scrollable: bool) {
+        self.native.set_scrollable(&mut cx.platform, scrollable);
+    }
+
+    /// Set whether the widget is focusable.
+    pub fn set_focusable(&mut self, cx: &mut Context<P>, focusable: bool) {
+        self.native.set_focusable(&mut cx.platform, focusable);
+    }
+
     /// Set the `on_key` callback.
     pub fn set_on_key(
         &mut self,

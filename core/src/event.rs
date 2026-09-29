@@ -17,6 +17,13 @@ pub struct MoveEvent {
     pub position: Point<f32>,
 }
 
+/// An event emitted then a scroll wheel is turned.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ScrollEvent {
+    /// The amount of scroll.
+    pub delta: Point<f32>,
+}
+
 /// A pointer button.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Button {
@@ -42,17 +49,20 @@ pub enum Button {
 /// An event that can happen to a [`pressable`](crate::views::pressable).
 #[derive(Clone, Debug, PartialEq)]
 pub enum PressableEvent {
-    /// The pointer was pressed.
+    /// A pointer was pressed.
     Pressed(PressEvent),
 
-    /// The pointer was released.
+    /// A pointer was released.
     Released(PressEvent),
 
-    /// The press was cancelled.
+    /// A press was cancelled.
     Cancelled(PressEvent),
 
-    /// The pointer moved.
+    /// A pointer moved.
     Moved(MoveEvent),
+
+    /// A wheel was scrolled.
+    Scrolled(ScrollEvent),
 
     /// The view changed hovered state.
     Hovered(bool),

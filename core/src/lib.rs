@@ -19,7 +19,7 @@ pub mod views;
 pub mod widgets;
 
 pub use context::{BoxedEffect, Context};
-pub use event::{Button, MoveEvent, PressEvent, PressableEvent, TextInputEvent};
+pub use event::{Button, MoveEvent, PressEvent, PressableEvent, ScrollEvent, TextInputEvent};
 pub use input::{Input, InputFilter, InputHandler, InputMessage, MatchKey};
 pub use layout::{
     Allocation, AvailableSpace, CachedMeasurable, LayoutNode, LayoutTree, Measurable,
