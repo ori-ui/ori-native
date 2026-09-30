@@ -39,6 +39,11 @@ where
         cx.layout.set_layout(self.layout, layout);
     }
 
+    /// Set whether the text is selectable.
+    pub fn set_selectable(&mut self, cx: &mut Context<P>, selectable: bool) {
+        self.native.set_selectable(&mut cx.platform, selectable);
+    }
+
     /// Set the text.
     pub fn set_text(
         &mut self,

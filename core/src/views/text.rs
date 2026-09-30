@@ -19,6 +19,8 @@ pub struct Text {
     text:   String,
     align:  TextAlign,
     wrap:   TextWrap,
+
+    selectable: bool,
 }
 
 impl Text {
@@ -30,6 +32,8 @@ impl Text {
             text:   text.into(),
             align:  TextAlign::Start,
             wrap:   TextWrap::None,
+
+            selectable: false,
         }
     }
 
@@ -86,6 +90,12 @@ impl Text {
         self.font.color = color;
         self
     }
+
+    /// Set whether the text is selectable.
+    pub fn selectable(mut self, selectable: bool) -> Self {
+        self.selectable = selectable;
+        self
+    }
 }
 
 impl Layout for Text {
@@ -119,12 +129,16 @@ where
             self.wrap,
         );
 
+        widget.set_selectable(cx, self.selectable);
+
         let state = TextState {
             layout: self.layout,
             font:   self.font,
             text:   self.text,
             align:  self.align,
             wrap:   self.wrap,
+
+            selectable: self.selectable,
         };
 
         (widget, state)
@@ -139,6 +153,11 @@ where
     ) {
         if state.layout != self.layout {
             element.set_layout(cx, self.layout);
+        }
+
+        if state.selectable != self.selectable {
+            state.selectable = self.selectable;
+            element.set_selectable(cx, self.selectable);
         }
 
         if state.font == self.font
@@ -189,4 +208,6 @@ pub struct TextState {
     text:   String,
     align:  TextAlign,
     wrap:   TextWrap,
+
+    selectable: bool,
 }

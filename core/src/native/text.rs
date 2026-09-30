@@ -18,6 +18,9 @@ where
     /// Get a reference to the widget.
     fn widget_ref(&self) -> P::WidgetRef;
 
+    /// Set whether the text is selectable.
+    fn set_selectable(&mut self, platform: &mut P, selectable: bool);
+
     /// Set the text.
     fn set_text(
         &mut self,
@@ -42,6 +45,10 @@ where
     }
 
     fn widget_ref(&self) -> P::WidgetRef {
+        unreachable!()
+    }
+
+    fn set_selectable(&mut self, _platform: &mut P, _selectable: bool) {
         unreachable!()
     }
 

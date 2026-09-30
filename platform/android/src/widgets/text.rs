@@ -34,12 +34,24 @@ impl NativeText<Platform> for Text {
         self.id
     }
 
+    fn set_selectable(&mut self, platform: &mut Platform, selectable: bool) {
+        let _ = platform.jni(|env, activity| {
+            env.call_method(
+                activity,
+                jni_str!("textSetSelectable"),
+                jni_sig!((long, boolean)),
+                &[self.id.into(), selectable.into()],
+            )?
+            .v()
+        });
+    }
+
     fn set_text(
         &mut self,
         platform: &mut Platform,
         spans: Box<[TextSpan]>,
         text: String,
-        _align: TextAlign,
+        align: TextAlign,
         wrap: TextWrap,
     ) -> impl Measurable<Platform> {
         let _ = platform.jni(|env, activity| {
@@ -91,6 +103,8 @@ impl NativeText<Platform> for Text {
                             JString,
                             int,
                             int,
+                            int,
+                            int,
                             boolean,
                             boolean,
                             float,
@@ -107,6 +121,8 @@ impl NativeText<Platform> for Text {
                         (&family).into(),
                         (span.font.weight.0 as i32).into(),
                         0i32.into(),
+                        0i32.into(),
+                        text_align_to_gravity(align).into(),
                         span.font.italic.into(),
                         span.font.striketrough.into(),
                         span.font.color.r.into(),
@@ -122,6 +138,15 @@ impl NativeText<Platform> for Text {
         });
 
         TextLayout { id: self.id }
+    }
+}
+
+pub(crate) fn text_align_to_gravity(align: TextAlign) -> i32 {
+    match align {
+        TextAlign::Start => 0x00800003,   // Gravity.START
+        TextAlign::Center => 0x00000011,  // Gravity.CENTER
+        TextAlign::End => 0x00800005,     // Gravity.END
+        TextAlign::Justify => 0x00000077, // Gravity.FILL
     }
 }
 

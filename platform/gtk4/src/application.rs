@@ -71,14 +71,12 @@ impl Application {
             let _ = sender.send(Event::Activate);
         });
 
-        let main_context = glib::MainContext::default();
-
         app.register(None::<&gio::Cancellable>)
             .map_err(|_| Error::GdkApplicationRegister)?;
 
         app.activate();
 
-        main_context.block_on(async {
+        glib::MainContext::default().block_on(async {
             while state.running
                 && let Some(event) = receiver.recv().await
             {

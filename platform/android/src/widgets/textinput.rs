@@ -11,6 +11,7 @@ use crate::{
     Platform,
     application::{GlobalState, WidgetEvent},
     platform::WidgetId,
+    widgets::text::text_align_to_gravity,
 };
 
 pub struct TextInput {
@@ -243,15 +244,6 @@ impl Measurable<Platform> for TextInputLayout {
         });
 
         Size { width: 0.0, height }
-    }
-}
-
-fn text_align_to_gravity(align: TextAlign) -> i32 {
-    match align {
-        TextAlign::Start => 0x00800003,   // Gravity.START
-        TextAlign::Center => 0x00000011,  // Gravity.CENTER
-        TextAlign::End => 0x00800005,     // Gravity.END
-        TextAlign::Justify => 0x00000077, // Gravity.FILL
     }
 }
 

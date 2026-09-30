@@ -15,6 +15,7 @@ impl NativeText<Platform> for Text {
     fn build(_platform: &mut Platform) -> Self {
         let view = gtk4::TextView::new();
         view.set_editable(false);
+        view.set_focusable(false);
         view.set_cursor_visible(false);
         view.set_sensitive(false);
 
@@ -25,6 +26,10 @@ impl NativeText<Platform> for Text {
 
     fn widget_ref(&self) -> gtk4::Widget {
         self.view.clone().upcast()
+    }
+
+    fn set_selectable(&mut self, _platform: &mut Platform, selectable: bool) {
+        self.view.set_sensitive(selectable);
     }
 
     fn set_text(
