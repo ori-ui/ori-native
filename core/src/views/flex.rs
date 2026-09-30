@@ -1,9 +1,9 @@
 use ori::{Action, Message, Mut, View, ViewMarker};
 
 use crate::{
-    Border, BorderStyle, Color, Context, Corners, Direction, FlexContainer, FlexStyle, Layout,
-    LayoutStyle, Length, Overflow, Padding, Platform, Shadow, Sides, WidgetViewSeq,
-    widgets::GroupWidget,
+    BorderStyle, Color, Context, Corners, Direction, FlexStyle, LayoutStyle, Length, Overflow,
+    Platform, Shadow, Sides, StyleBorder, StyleCorners, StyleFlexContainer, StyleLayout,
+    StylePadding, StyleShadow, WidgetViewSeq, widgets::GroupWidget,
 };
 
 /// Container [`View`] with flexbox layout.
@@ -64,68 +64,6 @@ impl<V> Flex<V> {
         self
     }
 
-    /// Set the shadow properties.
-    pub fn shadow(self, dx: f32, dy: f32, radius: f32, color: Color) -> Self {
-        self.shadow_offset(dx, dy)
-            .shadow_radius(radius)
-            .shadow_color(color)
-    }
-
-    /// Set the shadow color.
-    pub fn shadow_color(mut self, color: Color) -> Self {
-        self.shadow.color = color;
-        self
-    }
-
-    /// Set the shadow offset.
-    pub fn shadow_offset(mut self, dx: f32, dy: f32) -> Self {
-        self.shadow.offset_x = dx;
-        self.shadow.offset_y = dy;
-        self
-    }
-
-    /// Set the shadow radius.
-    pub fn shadow_radius(mut self, radius: f32) -> Self {
-        self.shadow.radius = radius;
-        self
-    }
-
-    /// Set the shadow spread.
-    pub fn shadow_spread(mut self, spread: f32) -> Self {
-        self.shadow.spread = spread;
-        self
-    }
-
-    /// Set the radius of all corners.
-    pub fn corner(mut self, radii: impl Into<Corners<f32>>) -> Self {
-        self.corners = radii.into();
-        self
-    }
-
-    /// Set the radius of the top left corner.
-    pub fn corner_top_left(mut self, radius: f32) -> Self {
-        self.corners.top_left = radius;
-        self
-    }
-
-    /// Set the radius of the top right corner.
-    pub fn corner_top_right(mut self, radius: f32) -> Self {
-        self.corners.top_right = radius;
-        self
-    }
-
-    /// Set the radius of the bottom right corner.
-    pub fn corner_bottom_right(mut self, radius: f32) -> Self {
-        self.corners.bottom_right = radius;
-        self
-    }
-
-    /// Set the radius of the bottom left corner.
-    pub fn corner_bottom_left(mut self, radius: f32) -> Self {
-        self.corners.bottom_left = radius;
-        self
-    }
-
     /// Set whether to use a hardware layer.
     ///
     /// # Platform
@@ -137,27 +75,39 @@ impl<V> Flex<V> {
     }
 }
 
-impl<V> Layout for Flex<V> {
+impl<V> StyleLayout for Flex<V> {
     fn get_layout_style_mut(&mut self) -> &mut LayoutStyle {
         &mut self.layout
     }
 }
 
-impl<V> Border for Flex<V> {
+impl<V> StyleBorder for Flex<V> {
     fn get_border_style_mut(&mut self) -> &mut BorderStyle {
         &mut self.border
     }
 }
 
-impl<V> Padding for Flex<V> {
+impl<V> StylePadding for Flex<V> {
     fn get_padding_mut(&mut self) -> &mut Sides<Length> {
         &mut self.padding
     }
 }
 
-impl<V> FlexContainer for Flex<V> {
+impl<V> StyleFlexContainer for Flex<V> {
     fn get_flex_style_mut(&mut self) -> &mut FlexStyle {
         &mut self.flex
+    }
+}
+
+impl<V> StyleCorners for Flex<V> {
+    fn get_corners_mut(&mut self) -> &mut Corners<f32> {
+        &mut self.corners
+    }
+}
+
+impl<V> StyleShadow for Flex<V> {
+    fn get_shadow_mut(&mut self) -> &mut Shadow {
+        &mut self.shadow
     }
 }
 

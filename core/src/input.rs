@@ -44,7 +44,7 @@ impl<T> Input<T> {
     }
 
     /// Add a handler to a specific key.
-    pub fn add_key<A>(
+    pub fn add_key_down<A>(
         &mut self,
         key: impl MatchKey + 'static,
         mods: Modifiers,
@@ -58,6 +58,21 @@ impl<T> Input<T> {
         );
     }
 
+    /// Add a handler to a specific key.
+    pub fn add_key_up<A>(
+        &mut self,
+        key: impl MatchKey + 'static,
+        mods: Modifiers,
+        mut on_key_up: impl FnMut(&mut T) -> A + 'static,
+    ) where
+        A: Into<Action>,
+    {
+        self.add_any_key(
+            move |k, m, p| key.matches(k) && m == mods && !p,
+            move |data, _, _, _| on_key_up(data),
+        );
+    }
+
     /// Add a handler any key.
     pub fn add_any_key<A>(
         &mut self,
@@ -68,7 +83,7 @@ impl<T> Input<T> {
     {
         self.filter.keys.push(Box::new(filter));
         self.handler.keys.push(Box::new(
-            move |data, key, modifiers, pressed| handler(data, key, modifiers, pressed).into(),
+            move |data, key, modifiers, is_press| handler(data, key, modifiers, is_press).into(),
         ));
     }
 }
@@ -161,10 +176,12 @@ impl MatchKey for char {
 }
 
 /// A message produced by an [`InputFilter`] and handled by an [`InputHandler`].
+#[derive(Clone, Debug)]
 pub struct InputMessage {
     internal: InputMessageInternal,
 }
 
+#[derive(Clone, Debug)]
 enum InputMessageInternal {
     Key {
         key:       Key,

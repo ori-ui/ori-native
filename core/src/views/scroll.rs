@@ -1,7 +1,7 @@
 use ori::{Action, Message, Mut, Proxied, Proxy, Tracked, View, ViewId, ViewMarker};
 
 use crate::{
-    Context, Direction, Layout, LayoutStyle, Platform, WidgetView, widget::WidgetMut,
+    Context, Direction, LayoutStyle, Platform, StyleLayout, WidgetView, widget::WidgetMut,
     widgets::ScrollWidget,
 };
 
@@ -48,7 +48,7 @@ impl<T, V> Scroll<T, V> {
     }
 }
 
-impl<T, V> Layout for Scroll<T, V> {
+impl<T, V> StyleLayout for Scroll<T, V> {
     fn get_layout_style_mut(&mut self) -> &mut LayoutStyle {
         &mut self.layout
     }

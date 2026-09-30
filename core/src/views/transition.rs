@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, time::Duration};
+use std::{f32::consts::PI, rc::Rc, sync::Arc, time::Duration};
 
 use crate::{
     Color, Platform, WidgetView,
@@ -30,6 +30,36 @@ where
         transition,
         build,
     })
+}
+
+impl Transition for Box<dyn Transition> {
+    fn duration(&self) -> f32 {
+        self.as_ref().duration()
+    }
+
+    fn curve(&self, t: f32) -> f32 {
+        self.as_ref().curve(t)
+    }
+}
+
+impl Transition for Rc<dyn Transition> {
+    fn duration(&self) -> f32 {
+        self.as_ref().duration()
+    }
+
+    fn curve(&self, t: f32) -> f32 {
+        self.as_ref().curve(t)
+    }
+}
+
+impl Transition for Arc<dyn Transition> {
+    fn duration(&self) -> f32 {
+        self.as_ref().duration()
+    }
+
+    fn curve(&self, t: f32) -> f32 {
+        self.as_ref().curve(t)
+    }
 }
 
 struct TransitionAnimation<U, X, F> {

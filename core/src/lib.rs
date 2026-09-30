@@ -28,11 +28,14 @@ pub use lifecycle::{AnimateRequest, LayoutRequest};
 pub use platform::{Platform, Unsupported};
 pub use safearea::SafeAreaInsets;
 pub use style::{
-    Affine, Align, Border, BorderStyle, Color, Corners, Direction, FlexContainer, FlexStyle, Fract,
-    Justify, Layout, LayoutStyle, Length, NavigationBar, Newline, Overflow, Padding, Point,
-    PopupPosition, Position, Shadow, Side, Sides, Size, Sizing, StatusBar, Submit,
+    Affine, Align, BorderStyle, Color, Corners, Direction, FlexStyle, Fract, Justify, LayoutStyle,
+    Length, NavigationBar, Newline, Overflow, Point, PopupPosition, Position, Shadow, Side, Sides,
+    Size, Sizing, StatusBar, StyleBorder, StyleCorners, StyleFlexContainer, StyleLayout,
+    StylePadding, StyleShadow, Submit,
 };
 pub use text::{Font, Stretch, TextAlign, TextSpan, TextWrap, Weight};
-pub use widget::{BoxedWidget, Parent, Widget, WidgetMut, WidgetView, WidgetViewSeq};
+pub use widget::{
+    BoxedWidget, BoxedWidgetView, Parent, Widget, WidgetMut, WidgetView, WidgetViewSeq,
+};
 
 pub use keyboard_types::{Key, Modifiers, NamedKey};

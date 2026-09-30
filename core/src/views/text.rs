@@ -3,8 +3,8 @@ use std::borrow::Cow;
 use ori::{Action, Message, Mut, View, ViewMarker};
 
 use crate::{
-    Color, Context, Font, Layout, LayoutStyle, Platform, Stretch, TextAlign, TextSpan, TextWrap,
-    Weight, widgets::TextWidget,
+    Color, Context, Font, LayoutStyle, Platform, Stretch, StyleLayout, TextAlign, TextSpan,
+    TextWrap, Weight, widgets::TextWidget,
 };
 
 /// [`View`] of a text paragraph.
@@ -98,7 +98,7 @@ impl Text {
     }
 }
 
-impl Layout for Text {
+impl StyleLayout for Text {
     fn get_layout_style_mut(&mut self) -> &mut LayoutStyle {
         &mut self.layout
     }

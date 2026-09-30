@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use ori::{Action, Message, Mut, Proxied, Proxy, Tracked, View, ViewId, ViewMarker};
 
 use crate::{
-    Color, Context, Font, Layout, LayoutStyle, Newline, Platform, Stretch, Submit, TextAlign,
+    Color, Context, Font, LayoutStyle, Newline, Platform, Stretch, StyleLayout, Submit, TextAlign,
     TextWrap, Weight, event::TextInputEvent, widgets::TextInputWidget,
 };
 
@@ -278,7 +278,7 @@ impl<T> TextInput<T> {
     }
 }
 
-impl<T> Layout for TextInput<T> {
+impl<T> StyleLayout for TextInput<T> {
     fn get_layout_style_mut(&mut self) -> &mut LayoutStyle {
         &mut self.layout
     }

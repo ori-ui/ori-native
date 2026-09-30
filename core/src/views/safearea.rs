@@ -1,8 +1,8 @@
 use ori::{AnyView, Base, Builder, BuilderMarker, views};
 
 use crate::{
-    Context, Layout, LayoutStyle, Length, Padding, Platform, SafeAreaInsets, Sides, WidgetView,
-    views::Flex,
+    Context, LayoutStyle, Length, Platform, SafeAreaInsets, Sides, StyleLayout, StylePadding,
+    WidgetView, views::Flex,
 };
 
 /// [`View`](ori::View) that ensures contents isn't overlapped by system elements.
@@ -26,7 +26,7 @@ impl<V> SafeArea<V> {
     }
 }
 
-impl<V> Layout for SafeArea<V> {
+impl<V> StyleLayout for SafeArea<V> {
     fn get_layout_style_mut(&mut self) -> &mut LayoutStyle {
         &mut self.style
     }

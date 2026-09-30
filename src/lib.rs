@@ -55,12 +55,12 @@ pub mod views {
 /// Commonly used imports.
 pub mod prelude {
     pub use crate::{
-        Action, Align, App, Border, BoxedView, Builder, BuilderMarker, Button, Color, Context,
-        Corners, Direction, Effect, Element, FlexContainer, Font, Fract, Justify, Key, Layout,
-        LayoutStyle, Length, Message, Modifiers, NamedKey, NavigationBar, Newline, Overflow,
-        Padding, Position, PressableEvent, Proxy, SafeAreaInsets, Shadow, Side, Sides, Size,
-        Sizing, StatusBar, Stretch, Submit, TextAlign, TextWrap, View, ViewId, ViewSeq, Weight,
-        views::*,
+        Action, Align, App, BoxedView, Builder, BuilderMarker, Button, Color, Context, Corners,
+        Direction, Effect, Element, Font, Fract, Justify, Key, LayoutStyle, Length, Message,
+        Modifiers, NamedKey, NavigationBar, Newline, Overflow, Position, PressableEvent, Proxy,
+        SafeAreaInsets, Shadow, Side, Sides, Size, Sizing, StatusBar, Stretch, StyleBorder,
+        StyleCorners, StyleFlexContainer, StyleLayout, StylePadding, StyleShadow, Submit,
+        TextAlign, TextWrap, View, ViewId, ViewSeq, Weight, views::*,
     };
 
     #[allow(unused_imports)]

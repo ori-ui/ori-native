@@ -49,7 +49,7 @@ impl<V, F> Button<V, F> {
 }
 
 // to be able to configure layout `Layout` is implemented for `Button`
-impl<V, F> Layout for Button<V, F> {
+impl<V, F> StyleLayout for Button<V, F> {
     fn get_layout_style_mut(&mut self) -> &mut LayoutStyle {
         &mut self.layout
     }

@@ -1,6 +1,7 @@
 //! Builtin views.
 
 mod animate;
+mod button;
 mod flex;
 mod image;
 mod layout;
@@ -17,6 +18,7 @@ mod transition;
 mod window;
 
 pub use animate::{Animate, Animation, animate};
+pub use button::{Button, button};
 pub use flex::{Flex, column, flex, row};
 pub use image::{Image, image};
 pub use layout::{Layout, on_layout};

@@ -3,8 +3,8 @@ use std::collections::VecDeque;
 use ori::{Action, Message, Mut, Proxied, Proxy, Tracked, View, ViewId, ViewMarker};
 
 use crate::{
-    Context, Direction, Layout, LayoutStyle, Length, Padding, Platform, Sides, WidgetView,
-    widget::WidgetMut, widgets::ListWidget,
+    Context, Direction, LayoutStyle, Length, Platform, Sides, StyleLayout, StylePadding,
+    WidgetView, widget::WidgetMut, widgets::ListWidget,
 };
 
 /// [`View`] that can display a large scrollable list.
@@ -67,13 +67,13 @@ impl<F> List<F> {
     }
 }
 
-impl<F> Layout for List<F> {
+impl<F> StyleLayout for List<F> {
     fn get_layout_style_mut(&mut self) -> &mut LayoutStyle {
         &mut self.layout
     }
 }
 
-impl<F> Padding for List<F> {
+impl<F> StylePadding for List<F> {
     fn get_padding_mut(&mut self) -> &mut Sides<Length> {
         &mut self.padding
     }

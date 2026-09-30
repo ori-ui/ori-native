@@ -95,16 +95,16 @@ fn todos(data: &Data) -> impl View<Data> + use<> {
     .border_color(theme::BORDER)
 }
 
-fn todo(index: usize, _todo: &Todo) -> impl View<Data> + use<> {
-    let view = pressable(move |todo: &Todo, state| {
-        let name = if todo.done {
-            text(&todo.name)
-                .color(theme::TEXT.fade(0.6))
-                .strikethrough(true)
-        } else {
-            text(&todo.name).color(theme::TEXT)
-        };
+fn todo(index: usize, todo: &Todo) -> impl View<Data> + use<> {
+    let name = if todo.done {
+        text(&todo.name)
+            .color(theme::TEXT.fade(0.6))
+            .strikethrough(true)
+    } else {
+        text(&todo.name).color(theme::TEXT)
+    };
 
+    let view = button(
         row((
             done(todo),
             name.flex(1.0),
@@ -116,14 +116,13 @@ fn todo(index: usize, _todo: &Todo) -> impl View<Data> + use<> {
         .border_color(theme::BORDER)
         .justify_content(Justify::SpaceBetween)
         .align_items(Align::Center)
-        .background(if state.hovered {
-            theme::BACKGROUND.lighten(0.02)
-        } else {
-            Color::TRANSPARENT
-        })
         .min_width(0.0)
-    })
-    .on_press(|todo: &mut Todo, _| todo.done = !todo.done);
+        .flex(1.0),
+        |todo: &mut Todo| todo.done = !todo.done,
+    )
+    .padding(0.0)
+    .color(Color::TRANSPARENT)
+    .color_hovered(Color::BLACK.fade(0.1));
 
     map(view, move |data: &mut Data, map| {
         map(&mut data.todos[index])
@@ -142,16 +141,19 @@ fn done(todo: &Todo) -> impl View<Todo> + use<> {
         .align_items(Align::Center)
 }
 
-fn remove<T>(index: usize) -> impl View<T> {
-    pressable(|_, _| {
-        let icon = image(include_bytes!("xmark.svg")).tint(theme::TEXT);
+fn remove<T>(index: usize) -> impl View<T>
+where
+    T: 'static,
+{
+    let icon = image(include_bytes!("xmark.svg")).tint(theme::TEXT);
 
-        row(icon)
-            .size(28.0, 28.0)
-            .corner(8.0)
-            .background(theme::DANGER)
-            .justify_content(Justify::Center)
-            .align_items(Align::Center)
+    button(icon, move |_| {
+        Message::new(Remove(index), None)
     })
-    .on_press(move |_, _| Message::new(Remove(index), None))
+    .size(28.0, 28.0)
+    .padding(0.0)
+    .corner(8.0)
+    .color(theme::DANGER)
+    .justify_content(Justify::Center)
+    .align_items(Align::Center)
 }

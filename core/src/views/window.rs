@@ -69,7 +69,21 @@ impl<T, V> Window<T, V> {
     where
         A: Into<Action>,
     {
-        self.attributes.input.add_key(key, mods, on_key);
+        self.attributes.input.add_key_down(key, mods, on_key);
+        self
+    }
+
+    /// Add an callback for when a `key` is released.
+    pub fn on_key_up<A>(
+        mut self,
+        key: impl MatchKey + 'static,
+        mods: Modifiers,
+        on_key_up: impl FnMut(&mut T) -> A + 'static,
+    ) -> Self
+    where
+        A: Into<Action>,
+    {
+        self.attributes.input.add_key_up(key, mods, on_key_up);
         self
     }
 }

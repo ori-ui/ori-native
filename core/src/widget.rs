@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use ori::{Element, Sub, View, ViewSeq};
+use ori::{AnyView, Element, Sub, View, ViewSeq};
 
 use crate::{Context, LayoutNode, Platform};
 
@@ -88,6 +88,9 @@ where
 
 /// Type erased [`Widget`].
 pub type BoxedWidget<P> = Box<dyn Widget<P>>;
+
+/// Type erased [`WidgetView`].
+pub type BoxedWidgetView<P, T> = Box<dyn AnyView<Context<P>, T, BoxedWidget<P>>>;
 
 impl<P> Widget<P> for BoxedWidget<P>
 where

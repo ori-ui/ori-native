@@ -136,7 +136,7 @@ impl<T, V> LayerShell<T, V> {
     where
         A: Into<Action>,
     {
-        self.attributes.input.add_key(key, mods, on_key);
+        self.attributes.input.add_key_down(key, mods, on_key);
         self
     }
 }
