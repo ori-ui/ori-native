@@ -59,7 +59,6 @@ fn ui(data: &Data) -> impl Effect<Data> + use<> {
 fn input() -> impl View<Data> + use<> {
     with(
         |_| String::new(),
-        |_, _| {},
         |name, _| {
             row(textinput()
                 .text(name)

@@ -62,28 +62,25 @@ fn modal_button() -> impl View<Data> + use<> {
         .inset(0.0)
     }
 
-    with_default(
-        |_, _| {},
-        |_, _| {
-            pressable(|(open, _): &(bool, _), state| {
-                let color = if state.pressed {
-                    Color::BLACK.fade(0.2)
-                } else {
-                    Color::BLACK.fade(0.1)
-                };
+    with_default(|_, _| {
+        pressable(|(open, _): &(bool, _), state| {
+            let color = if state.pressed {
+                Color::BLACK.fade(0.2)
+            } else {
+                Color::BLACK.fade(0.1)
+            };
 
-                effect(
-                    transition(color, Ease(0.1), |_, color| {
-                        column(text("Open modal").size(20.0))
-                            .background(color)
-                            .padding(12.0)
-                            .border(1.0, Color::BLACK)
-                            .corner(12.0)
-                    }),
-                    open.then(|| teleport(MODAL, modal())),
-                )
-            })
-            .on_press(|(open, _): &mut (bool, _), _| *open = !*open)
-        },
-    )
+            effect(
+                transition(color, Ease(0.1), |_, color| {
+                    column(text("Open modal").size(20.0))
+                        .background(color)
+                        .padding(12.0)
+                        .border(1.0, Color::BLACK)
+                        .corner(12.0)
+                }),
+                open.then(|| teleport(MODAL, modal())),
+            )
+        })
+        .on_press(|(open, _): &mut (bool, _), _| *open = !*open)
+    })
 }

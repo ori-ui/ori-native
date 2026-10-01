@@ -132,7 +132,6 @@ where
                 key_pressed: false,
                 on_click:    None,
             },
-            move |state, _| state.on_click = Some(self.on_click),
             move |_, _| {
                 let mut contents = contents.take();
                 let trans = self.transition.clone();
@@ -199,5 +198,6 @@ where
                 )
             },
         )
+        .update(move |state, _| state.on_click = Some(self.on_click))
     }
 }
