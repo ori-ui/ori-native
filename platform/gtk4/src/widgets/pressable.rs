@@ -82,9 +82,10 @@ impl NativePressable<Platform> for Pressable {
         });
 
         fixed.add_controller(controller);
-        let hovered = Rc::new(Cell::new(false));
 
+        let hovered = Rc::new(Cell::new(false));
         let controller = gtk4::EventControllerMotion::new();
+
         controller.connect_motion({
             let fixed = fixed.downgrade();
             let on_event = on_event.clone();
@@ -154,15 +155,16 @@ impl NativePressable<Platform> for Pressable {
 
         fixed.add_controller(controller);
 
+        let focused = Rc::new(Cell::new(false));
         let controller = gtk4::EventControllerFocus::new();
-        controller.connect_enter({
-            let on_event = on_event.clone();
-            move |_| on_event(PressableEvent::Focused(true))
-        });
 
-        controller.connect_leave({
-            let on_event = on_event.clone();
-            move |_| on_event(PressableEvent::Focused(false))
+        controller.connect_is_focus_notify(move |controller| {
+            let is_focus = controller.is_focus();
+
+            if is_focus != focused.get() {
+                focused.set(is_focus);
+                on_event(PressableEvent::Focused(is_focus));
+            }
         });
 
         fixed.add_controller(controller);
