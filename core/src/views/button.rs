@@ -1,13 +1,15 @@
 use std::rc::Rc;
 
 use keyboard_types::{Modifiers, NamedKey};
-use ori::{Action, Builder, BuilderMarker};
+use ori::{
+    Action, Builder, BuilderMarker,
+    views::{maybe, with, without},
+};
 
 use crate::{
-    BorderStyle, BoxedWidgetView, Color, Context, Corners, FlexStyle, LayoutStyle, Length,
-    Platform, Sides, StyleBorder, StyleCorners, StyleFlexContainer, StyleLayout, StylePadding,
-    WidgetView,
-    views::{self, Ease, Transition},
+    BorderStyle, Color, Context, Corners, FlexStyle, LayoutStyle, Length, Platform, Sides,
+    StyleBorder, StyleCorners, StyleFlexContainer, StyleLayout, StylePadding, WidgetView,
+    views::{Ease, Transition, pressable, row, transition},
 };
 
 /// A simple button [`View`](ori::View).
@@ -113,12 +115,11 @@ impl<V, F> BuilderMarker for Button<V, F> {}
 impl<P, T, V, F, A> Builder<Context<P>, T> for Button<V, F>
 where
     P: Platform,
-    T: 'static,
-    V: WidgetView<P, T> + 'static,
-    F: FnMut(&mut T) -> A + 'static,
+    V: WidgetView<P, T>,
+    F: FnMut(&mut T) -> A,
     A: Into<Action>,
 {
-    fn build(self) -> BoxedWidgetView<P, T> {
+    fn build(self) -> impl WidgetView<P, T> {
         struct State<F> {
             key_pressed: bool,
             on_click:    Option<F>,
@@ -126,7 +127,7 @@ where
 
         let mut contents = Some(self.contents);
 
-        Box::new(ori::views::with(
+        with(
             |_| State {
                 key_pressed: false,
                 on_click:    None,
@@ -134,9 +135,9 @@ where
             move |state, _| state.on_click = Some(self.on_click),
             move |_, _| {
                 let mut contents = contents.take();
-                let transition = self.transition.clone();
+                let trans = self.transition.clone();
 
-                views::pressable(
+                pressable(
                     move |(state, _): &(State<F>, _), press_state| {
                         let color = if press_state.pressed || state.key_pressed {
                             self.color_pressed.unwrap_or_else(|| self.color.darken(0.1))
@@ -154,18 +155,17 @@ where
                         };
 
                         let mut contents = contents.take();
-                        views::transition(
+
+                        transition(
                             (color, border_color),
-                            transition.clone(),
+                            trans.clone(),
                             move |_, (color, border_color)| {
-                                let mut row = views::row(ori::views::without(ori::views::maybe(
-                                    contents.take(),
-                                )))
-                                .layout(self.layout)
-                                .padding(self.padding)
-                                .corner(self.corners)
-                                .background(color)
-                                .border(self.border.width, border_color);
+                                let mut row = row(without(maybe(contents.take())))
+                                    .layout(self.layout)
+                                    .padding(self.padding)
+                                    .corner(self.corners)
+                                    .background(color)
+                                    .border(self.border.width, border_color);
 
                                 *row.get_flex_style_mut() = self.flex;
                                 row
@@ -198,6 +198,6 @@ where
                     },
                 )
             },
-        ))
+        )
     }
 }

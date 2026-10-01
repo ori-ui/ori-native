@@ -79,6 +79,7 @@ impl<T> From<Corners<T>> for [T; 4] {
 
 /// A trait for styling corner radii.
 pub trait StyleCorners: Sized {
+    /// Get a mutable reference to the corner style.
     fn get_corners_mut(&mut self) -> &mut Corners<f32>;
 
     /// Set the radius of all corners.

@@ -1,4 +1,5 @@
 #![warn(missing_docs, unused_crate_dependencies, clippy::unwrap_used)]
+#![allow(refining_impl_trait)]
 
 //! Core implementation of `ori-native`.
 

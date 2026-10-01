@@ -1,4 +1,4 @@
-use ori::{AnyView, Base, Builder, BuilderMarker, views};
+use ori::{Builder, BuilderMarker, views::using_or_default};
 
 use crate::{
     Context, LayoutStyle, Length, Platform, SafeAreaInsets, Sides, StyleLayout, StylePadding,
@@ -13,7 +13,7 @@ pub fn safe_area<V>(contents: V) -> SafeArea<V> {
 /// [`View`](ori::View) that ensures contents isn't overlapped by system elements.
 pub struct SafeArea<V> {
     contents: V,
-    style:    LayoutStyle,
+    layout:   LayoutStyle,
 }
 
 impl<V> SafeArea<V> {
@@ -21,14 +21,14 @@ impl<V> SafeArea<V> {
     pub fn new(contents: V) -> Self {
         Self {
             contents,
-            style: LayoutStyle::default(),
+            layout: LayoutStyle::default(),
         }
     }
 }
 
 impl<V> StyleLayout for SafeArea<V> {
     fn get_layout_style_mut(&mut self) -> &mut LayoutStyle {
-        &mut self.style
+        &mut self.layout
     }
 }
 
@@ -36,27 +36,20 @@ impl<V> BuilderMarker for SafeArea<V> {}
 impl<P, T, V> Builder<Context<P>, T> for SafeArea<V>
 where
     P: Platform,
-    T: 'static,
-    V: WidgetView<P, T> + 'static,
+    V: WidgetView<P, T>,
 {
-    fn build(self) -> Box<dyn AnyView<Context<P>, T, <Context<P> as Base>::Element>> {
-        Box::new(views::using_or_default(
-            move |_, insets: &SafeAreaInsets| {
-                let SafeAreaInsets(insets) = insets;
+    fn build(self) -> impl WidgetView<P, T> {
+        using_or_default(move |_, SafeAreaInsets(insets)| {
+            let padding = Sides {
+                top:    Length::Length(insets.top),
+                right:  Length::Length(insets.right),
+                bottom: Length::Length(insets.bottom),
+                left:   Length::Length(insets.left),
+            };
 
-                let padding = Sides {
-                    top:    Length::Length(insets.top),
-                    right:  Length::Length(insets.right),
-                    bottom: Length::Length(insets.bottom),
-                    left:   Length::Length(insets.left),
-                };
-
-                let mut flex = Flex::new(self.contents);
-                *flex.get_layout_style_mut() = self.style;
-                *flex.get_padding_mut() = padding;
-
-                flex
-            },
-        ))
+            Flex::new(self.contents)
+                .layout(self.layout)
+                .padding(padding)
+        })
     }
 }

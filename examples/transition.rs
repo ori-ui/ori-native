@@ -59,15 +59,15 @@ impl<V, F> StyleLayout for Button<V, F> {
 impl<V, F> BuilderMarker for Button<V, F> {}
 impl<T, V, F, A> Builder<Context, T> for Button<V, F>
 where
-    T: 'static,
-    V: View<T> + 'static,
+    V: View<T>,
     F: FnMut(&mut T) -> A + 'static,
     A: Into<Action>,
 {
-    fn build(mut self) -> BoxedView<T> {
+    #[allow(refining_impl_trait)]
+    fn build(mut self) -> impl View<T> {
         let mut contents = Some(self.contents);
 
-        let view = pressable(move |_, state| {
+        pressable(move |_, state| {
             // compute the color of the button
             let mut color = self.color;
 
@@ -112,8 +112,6 @@ where
                 },
             )
         })
-        .on_press(move |data, _| (self.on_press)(data));
-
-        Box::new(view)
+        .on_press(move |data, _| (self.on_press)(data))
     }
 }
