@@ -26,6 +26,7 @@ fn ui(data: &Data) -> impl Effect<Data> + use<> {
             .flex(1.0)
             .gap(20.0),
     )
+    .title("Readme (examples/readme.rs)")
 }
 
 fn main() {

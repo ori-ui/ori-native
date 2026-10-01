@@ -106,7 +106,7 @@ impl Measurable<Platform> for ImageLayout {
         platform: &mut Platform,
         known_size: Size<Option<f32>>,
         available_space: Size<AvailableSpace>,
-    ) -> Size<f32> {
+    ) -> (Size<f32>, Option<f32>) {
         let width = *self.width.get_or_insert_with(|| {
             platform
                 .jni(|env, activity| {
@@ -147,9 +147,11 @@ impl Measurable<Platform> for ImageLayout {
             AvailableSpace::MaxContent => height,
         };
 
-        Size {
+        let size = Size {
             width:  known_size.width.unwrap_or(width),
             height: known_size.height.unwrap_or(height),
-        }
+        };
+
+        (size, None)
     }
 }

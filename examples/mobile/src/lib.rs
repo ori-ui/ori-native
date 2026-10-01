@@ -19,6 +19,11 @@ fn ui(_data: &Data) -> impl Effect<Data> + use<> {
             safe_area(
                 column((
                     text("Hello mobile!").size(20.0),
+                    textinput()
+                        .placeholder("placeholder")
+                        .placeholder_color(Color::RED)
+                        .size(20.0)
+                        .width(200.0),
                     modal_button(),
                 ))
                 .justify_content(Justify::Center)

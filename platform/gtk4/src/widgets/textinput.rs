@@ -1,10 +1,10 @@
 use std::{cell::Cell, rc::Rc};
 
 use glib::object::{Cast, ObjectExt};
-use gtk4::prelude::{TextBufferExt, TextViewExt, WidgetExt};
+use gtk4::prelude::{TextBufferExt, TextTagExt, TextViewExt, WidgetExt};
 use ori_native_core::{
-    AvailableSpace, Font, Measurable, Newline, Size, Stretch, Submit, TextAlign, TextInputEvent,
-    TextWrap, native::NativeTextInput,
+    AvailableSpace, Color, Font, Measurable, Newline, Size, Stretch, Submit, TextAlign,
+    TextInputEvent, TextWrap, native::NativeTextInput,
 };
 
 use crate::{Platform, platform::StyleNode};
@@ -16,10 +16,9 @@ pub struct TextInput {
 
     view_style: StyleNode,
 
-    font:             Font,
-    placeholder_font: Font,
-    newline:          Rc<Cell<Newline>>,
-    submit:           Rc<Cell<Submit>>,
+    font:    Font,
+    newline: Rc<Cell<Newline>>,
+    submit:  Rc<Cell<Submit>>,
 }
 
 impl NativeTextInput<Platform> for TextInput {
@@ -136,7 +135,6 @@ impl NativeTextInput<Platform> for TextInput {
             view_style,
 
             font: Default::default(),
-            placeholder_font: Default::default(),
             newline,
             submit,
         }
@@ -163,42 +161,25 @@ impl NativeTextInput<Platform> for TextInput {
     }
 
     fn set_font(&mut self, platform: &mut Platform, font: Font, align: TextAlign, wrap: TextWrap) {
-        self.view.set_justification(match align {
+        let justification = match align {
             TextAlign::Start => gtk4::Justification::Left,
             TextAlign::Center => gtk4::Justification::Center,
             TextAlign::End => gtk4::Justification::Right,
             TextAlign::Justify => gtk4::Justification::Fill,
-        });
+        };
 
-        self.view.set_wrap_mode(match wrap {
+        let wrap_mode = match wrap {
             TextWrap::Word => gtk4::WrapMode::Word,
             TextWrap::Char => gtk4::WrapMode::Char,
             TextWrap::None => gtk4::WrapMode::None,
-        });
+        };
+
+        self.view.set_justification(justification);
+        self.placeholder.set_justification(justification);
+        self.view.set_wrap_mode(wrap_mode);
+        self.placeholder.set_wrap_mode(wrap_mode);
 
         platform.set_style(self.view_style, &font_style(&font));
-        self.font = font;
-    }
-
-    fn set_placeholder_font(
-        &mut self,
-        _platform: &mut Platform,
-        font: Font,
-        align: TextAlign,
-        wrap: TextWrap,
-    ) {
-        self.placeholder.set_justification(match align {
-            TextAlign::Start => gtk4::Justification::Left,
-            TextAlign::Center => gtk4::Justification::Center,
-            TextAlign::End => gtk4::Justification::Right,
-            TextAlign::Justify => gtk4::Justification::Fill,
-        });
-
-        self.placeholder.set_wrap_mode(match wrap {
-            TextWrap::Word => gtk4::WrapMode::Word,
-            TextWrap::Char => gtk4::WrapMode::Char,
-            TextWrap::None => gtk4::WrapMode::None,
-        });
 
         let buffer = self.placeholder.buffer();
         let tag_table = buffer.tag_table();
@@ -213,7 +194,24 @@ impl NativeTextInput<Platform> for TextInput {
             &buffer.end_iter(),
         );
 
-        self.placeholder_font = font;
+        self.font = font;
+    }
+
+    fn set_placeholder_color(&mut self, _platform: &mut Platform, color: Color) {
+        let buffer = self.placeholder.buffer();
+        let tag_table = buffer.tag_table();
+
+        let color = gdk4::RGBA::new(color.r, color.g, color.b, color.a);
+
+        tag_table.foreach(|tag| {
+            tag.set_foreground_rgba(Some(&color));
+
+            buffer.apply_tag(
+                tag,
+                &buffer.start_iter(),
+                &buffer.end_iter(),
+            );
+        });
     }
 
     fn set_text(&mut self, _platform: &mut Platform, text: String) {
@@ -223,32 +221,27 @@ impl NativeTextInput<Platform> for TextInput {
     fn set_placeholder_text(&mut self, _platform: &mut Platform, text: String) {
         let buffer = self.placeholder.buffer();
         let tag_table = buffer.tag_table();
-        let tag = super::text::font_tag(&self.placeholder_font);
 
-        tag_table.foreach(|tag| tag_table.remove(tag));
-        tag_table.add(&tag);
+        tag_table.foreach(|tag| {
+            buffer.apply_tag(
+                tag,
+                &buffer.start_iter(),
+                &buffer.end_iter(),
+            );
+        });
 
         buffer.set_text(&text);
-        buffer.apply_tag(
-            &tag,
-            &buffer.start_iter(),
-            &buffer.end_iter(),
-        );
     }
 
     fn get_measureable(&mut self, _platform: &mut Platform) -> impl Measurable<Platform> {
         Layout {
-            view:             self.view.clone(),
-            font:             self.font.clone(),
-            placeholder_font: self.placeholder_font.clone(),
+            view: self.view.clone(),
         }
     }
 }
 
 struct Layout {
-    view:             gtk4::TextView,
-    font:             Font,
-    placeholder_font: Font,
+    view: gtk4::TextView,
 }
 
 impl Measurable<Platform> for Layout {
@@ -257,21 +250,18 @@ impl Measurable<Platform> for Layout {
         _platform: &mut Platform,
         known_size: Size<Option<f32>>,
         _available_space: Size<AvailableSpace>,
-    ) -> Size<f32> {
+    ) -> (Size<f32>, Option<f32>) {
         let context = self.view.pango_context();
+        let metrics = context.metrics(None, None);
+        let theight = metrics.height() as f32 / pango::SCALE as f32;
+        let tascent = metrics.ascent() as f32 / pango::SCALE as f32;
 
-        let desc = super::text::font_description(&self.font);
-        let metrics = context.metrics(Some(&desc), context.language().as_ref());
-        let theight = (metrics.ascent() + metrics.descent()) as f32 / pango::SCALE as f32;
-
-        let desc = super::text::font_description(&self.placeholder_font);
-        let metrics = context.metrics(Some(&desc), context.language().as_ref());
-        let pheight = (metrics.ascent() + metrics.descent()) as f32 / pango::SCALE as f32;
-
-        Size {
+        let size = Size {
             width:  known_size.width.unwrap_or(0.0),
-            height: (theight.max(pheight) * 1.25).ceil(),
-        }
+            height: theight.ceil(),
+        };
+
+        (size, Some(tascent.ceil()))
     }
 }
 
@@ -303,7 +293,10 @@ fn font_style(font: &Font) -> String {
         false => "normal",
     };
 
-    let size = format!("font-size: {}pt;", font.size);
+    let size = format!(
+        "font-size: {}px;",
+        font.size * (96.0 / 72.0),
+    );
     let weight = format!("font-weight: {};", font.weight.0);
     let stretch = format!("font-stretch: {stretch};");
     let style = format!("font-style: {style};");

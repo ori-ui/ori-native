@@ -3,8 +3,8 @@ use jni::{
     objects::{JObject, JString},
 };
 use ori_native_core::{
-    AvailableSpace, Font, Measurable, Newline, Size, Submit, TextAlign, TextInputEvent, TextWrap,
-    native::NativeTextInput,
+    AvailableSpace, Color, Font, Measurable, Newline, Size, Submit, TextAlign, TextInputEvent,
+    TextWrap, native::NativeTextInput,
 };
 
 use crate::{
@@ -142,33 +142,14 @@ impl NativeTextInput<Platform> for TextInput {
         });
     }
 
-    fn set_placeholder_font(
-        &mut self,
-        platform: &mut Platform,
-        font: Font,
-        align: TextAlign,
-        _wrap: TextWrap,
-    ) {
+    fn set_placeholder_color(&mut self, platform: &mut Platform, color: Color) {
         let _ = platform.jni(|env, activity| {
-            let family = match font.family {
-                Some(family) => env.new_string(family)?,
-                None => JString::null(),
-            };
-
             env.call_method(
                 activity,
-                jni_str!("textInputSetPlaceholderFont"),
+                jni_str!("textInputSetPlaceholderColor"),
                 jni_sig!(
                     (
                         long,
-                        float,
-                        JString,
-                        int,
-                        int,
-                        int,
-                        int,
-                        boolean,
-                        boolean,
                         float,
                         float,
                         float,
@@ -177,18 +158,10 @@ impl NativeTextInput<Platform> for TextInput {
                 ),
                 &[
                     self.id.into(),
-                    font.size.into(),
-                    (&family).into(),
-                    (font.weight.0 as i32).into(),
-                    0i32.into(),
-                    0i32.into(),
-                    text_align_to_gravity(align).into(),
-                    font.italic.into(),
-                    font.striketrough.into(),
-                    font.color.r.into(),
-                    font.color.g.into(),
-                    font.color.b.into(),
-                    font.color.a.into(),
+                    color.r.into(),
+                    color.g.into(),
+                    color.b.into(),
+                    color.a.into(),
                 ],
             )?
             .v()
@@ -228,7 +201,7 @@ impl Measurable<Platform> for TextInputLayout {
         platform: &mut Platform,
         _known_size: Size<Option<f32>>,
         _available_space: Size<AvailableSpace>,
-    ) -> Size<f32> {
+    ) -> (Size<f32>, Option<f32>) {
         let height = *self.height.get_or_insert_with(|| {
             platform
                 .jni(|env, activity| {
@@ -243,7 +216,9 @@ impl Measurable<Platform> for TextInputLayout {
                 .unwrap_or(0.0)
         });
 
-        Size { width: 0.0, height }
+        let size = Size { width: 0.0, height };
+
+        (size, None)
     }
 }
 

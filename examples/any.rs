@@ -25,6 +25,7 @@ fn ui(data: &Data) -> impl Effect<Data> + use<> {
             .justify_content(Justify::Center)
             .align_items(Align::Center),
     )
+    .title("Any (examples/any.rs)")
 }
 
 fn toggle(data: &Data) -> impl View<Data> + use<> {

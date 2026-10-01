@@ -65,7 +65,7 @@ impl Measurable<Platform> for Layout {
         _platform: &mut Platform,
         known_size: Size<Option<f32>>,
         available_space: Size<AvailableSpace>,
-    ) -> Size<f32> {
+    ) -> (Size<f32>, Option<f32>) {
         let (width, height) = self.paintable.intrinsic_size().unwrap_or((0.0, 0.0));
 
         let width = match available_space.width {
@@ -80,10 +80,12 @@ impl Measurable<Platform> for Layout {
             AvailableSpace::MaxContent => height as f32,
         };
 
-        Size {
+        let size = Size {
             width:  known_size.width.unwrap_or(width),
             height: known_size.height.unwrap_or(height),
-        }
+        };
+
+        (size, None)
     }
 }
 

@@ -19,8 +19,8 @@ pub struct TextInput<T> {
     font:   Font,
     text:   Option<String>,
 
-    placeholder_font: Font,
-    placeholder_text: String,
+    placeholder:       String,
+    placeholder_color: Color,
 
     align: TextAlign,
     wrap:  TextWrap,
@@ -47,11 +47,8 @@ impl<T> TextInput<T> {
             font:   Default::default(),
             text:   None,
 
-            placeholder_font: Font {
-                color: Color::rgb(0.3, 0.3, 0.3),
-                ..Default::default()
-            },
-            placeholder_text: String::new(),
+            placeholder:       String::new(),
+            placeholder_color: Color::rgb(0.3, 0.3, 0.3),
 
             align: TextAlign::Start,
             wrap:  TextWrap::Word,
@@ -71,49 +68,43 @@ impl<T> TextInput<T> {
 
     /// Set the placeholder text.
     pub fn placeholder(mut self, placeholder: impl Into<String>) -> Self {
-        self.placeholder_text = placeholder.into();
+        self.placeholder = placeholder.into();
         self
     }
 
     /// Set the font size.
     pub fn size(mut self, size: f32) -> Self {
         self.font.size = size;
-        self.placeholder_font.size = size;
         self
     }
 
     /// Set the font family.
     pub fn family(mut self, family: impl Into<Cow<'static, str>>) -> Self {
         self.font.family = Some(family.into());
-        self.placeholder_font.family = self.font.family.clone();
         self
     }
 
     /// Set the font weight.
     pub fn weight(mut self, weight: Weight) -> Self {
         self.font.weight = weight;
-        self.placeholder_font.weight = weight;
         self
     }
 
     /// Set the font stretch.
     pub fn stretch(mut self, stretch: Stretch) -> Self {
         self.font.stretch = stretch;
-        self.placeholder_font.stretch = stretch;
         self
     }
 
     /// Set whether the font is italic.
     pub fn italic(mut self, italic: bool) -> Self {
         self.font.italic = italic;
-        self.placeholder_font.italic = italic;
         self
     }
 
     /// Set whether the font is strikethrough.
     pub fn strikethrough(mut self, strikethrough: bool) -> Self {
         self.font.striketrough = strikethrough;
-        self.placeholder_font.striketrough = strikethrough;
         self
     }
 
@@ -123,45 +114,9 @@ impl<T> TextInput<T> {
         self
     }
 
-    /// Set the placeholder font size.
-    pub fn placeholder_size(mut self, size: f32) -> Self {
-        self.placeholder_font.size = size;
-        self
-    }
-
-    /// Set the placeholder font family.
-    pub fn placeholder_family(mut self, family: impl Into<Cow<'static, str>>) -> Self {
-        self.placeholder_font.family = Some(family.into());
-        self
-    }
-
-    /// Set the placeholder font weight.
-    pub fn placeholder_weight(mut self, weight: Weight) -> Self {
-        self.placeholder_font.weight = weight;
-        self
-    }
-
-    /// Set the placeholder font stretch.
-    pub fn placeholder_stretch(mut self, stretch: Stretch) -> Self {
-        self.placeholder_font.stretch = stretch;
-        self
-    }
-
-    /// Set whether the placeholder font is italic.
-    pub fn placeholder_italic(mut self, italic: bool) -> Self {
-        self.placeholder_font.italic = italic;
-        self
-    }
-
-    /// Set whether the placeholder font is strikethrough.
-    pub fn placeholder_strikethrough(mut self, strikethrough: bool) -> Self {
-        self.placeholder_font.striketrough = strikethrough;
-        self
-    }
-
     /// Set the placeholder text color.
     pub fn placeholder_color(mut self, color: Color) -> Self {
-        self.placeholder_font.color = color;
+        self.placeholder_color = color;
         self
     }
 
@@ -314,14 +269,9 @@ where
             widget.set_text(cx, text);
         }
 
-        widget.set_placeholder_font(
-            cx,
-            self.placeholder_font.clone(),
-            self.align,
-            self.wrap,
-        );
+        widget.set_placeholder_text(cx, self.placeholder.clone());
+        widget.set_placeholder_color(cx, self.placeholder_color);
 
-        widget.set_placeholder_text(cx, self.placeholder_text.clone());
         widget.update_layout(cx);
 
         widget.set_newline(cx, self.newline);
@@ -334,8 +284,8 @@ where
             font: self.font,
             text: self.text.unwrap_or_default(),
 
-            placeholder_font: self.placeholder_font,
-            placeholder_text: self.placeholder_text,
+            placeholder: self.placeholder,
+            placeholder_color: self.placeholder_color,
 
             align: self.align,
             wrap: self.wrap,
@@ -381,25 +331,15 @@ where
             changed |= true;
         }
 
-        if state.placeholder_font != self.placeholder_font
-            || state.align != self.align
-            || state.wrap != self.wrap
-        {
-            state.placeholder_font = self.placeholder_font.clone();
-            state.align = self.align;
-            state.wrap = self.wrap;
-            element.set_font(
-                cx,
-                self.placeholder_font,
-                self.align,
-                self.wrap,
-            );
+        if state.placeholder_color != self.placeholder_color {
+            state.placeholder_color = self.placeholder_color;
+            element.set_placeholder_color(cx, self.placeholder_color);
             changed |= true;
         }
 
-        if state.placeholder_text != self.placeholder_text {
-            state.placeholder_text = self.placeholder_text.clone();
-            element.set_placeholder_text(cx, self.placeholder_text);
+        if state.placeholder != self.placeholder {
+            state.placeholder = self.placeholder.clone();
+            element.set_placeholder_text(cx, self.placeholder);
             changed |= true;
         }
 
@@ -462,8 +402,8 @@ pub struct TextInputState<T> {
     font: Font,
     text: String,
 
-    placeholder_font: Font,
-    placeholder_text: String,
+    placeholder:       String,
+    placeholder_color: Color,
 
     align: TextAlign,
     wrap:  TextWrap,

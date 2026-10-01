@@ -19,6 +19,7 @@ fn ui(_data: &Data) -> impl Effect<Data> + use<> {
         .gap(20.0)
         .flex(1.0),
     )
+    .title("Window (examples/window.rs)")
 }
 
 // a configurable `button` view

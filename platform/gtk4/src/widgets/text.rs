@@ -89,7 +89,7 @@ impl Measurable<Platform> for TextLayout {
         _platform: &mut Platform,
         known_size: Size<Option<f32>>,
         available_space: Size<AvailableSpace>,
-    ) -> Size<f32> {
+    ) -> (Size<f32>, Option<f32>) {
         let context = self.view.pango_context();
         let layout = pango::Layout::new(&context);
 
@@ -108,7 +108,7 @@ impl Measurable<Platform> for TextLayout {
             attrs.insert(attr);
 
             let metrics = context.metrics(Some(&desc), context.language().as_ref());
-            let height = (metrics.ascent() + metrics.descent()) as f32 / pango::SCALE as f32;
+            let height = metrics.height() as f32 / pango::SCALE as f32;
             min_height = min_height.max(height);
         }
 
@@ -133,19 +133,29 @@ impl Measurable<Platform> for TextLayout {
             layout.set_width(width);
         }
 
-        let (width, height) = layout.pixel_size();
+        let (_, logical) = layout.extents();
 
-        Size {
-            width:  width as f32 + 1.0,
-            height: min_height.max(height as f32),
-        }
+        let width = logical.width() as f32 / pango::SCALE as f32;
+        let height = logical.height() as f32 / pango::SCALE as f32;
+        let baseline = (layout.baseline() - logical.y()) as f32 / pango::SCALE as f32;
+
+        let size = Size {
+            width:  width + 1.0,
+            height: min_height.max(height),
+        };
+
+        (size, Some(baseline.round()))
     }
 }
 
 pub(super) fn font_tag(font: &Font) -> gtk4::TextTag {
     let tag = gtk4::TextTag::new(None);
-    tag.set_size((font.size * pango::SCALE as f32).round() as i32);
-    tag.set_family(font.family.as_deref());
+
+    if let Some(ref family) = font.family {
+        tag.set_family(Some(family));
+    }
+
+    tag.set_size_points(font.size as f64);
     tag.set_weight(font.weight.0 as i32);
     tag.set_stretch(convert_stretch(font.stretch));
 

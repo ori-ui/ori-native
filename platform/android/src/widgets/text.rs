@@ -160,7 +160,7 @@ impl Measurable<Platform> for TextLayout {
         platform: &mut Platform,
         _known_size: Size<Option<f32>>,
         _available_space: Size<AvailableSpace>,
-    ) -> Size<f32> {
+    ) -> (Size<f32>, Option<f32>) {
         let width = platform
             .jni(|env, activity| {
                 env.call_method(
@@ -185,9 +185,11 @@ impl Measurable<Platform> for TextLayout {
             })
             .unwrap_or(0.0);
 
-        Size {
+        let size = Size {
             width: width + 1.0,
             height,
-        }
+        };
+
+        (size, None)
     }
 }

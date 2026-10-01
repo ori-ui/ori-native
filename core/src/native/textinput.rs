@@ -1,8 +1,8 @@
 use std::convert::Infallible;
 
 use crate::{
-    Font, Measurable, Newline, Platform, Submit, TextAlign, TextInputEvent, TextWrap, Unsupported,
-    platform::unsupported,
+    Color, Font, Measurable, Newline, Platform, Submit, TextAlign, TextInputEvent, TextWrap,
+    Unsupported, platform::unsupported,
 };
 
 /// A native text input widget.
@@ -35,13 +35,7 @@ where
     fn set_text(&mut self, platform: &mut P, text: String);
 
     /// Set the `font` of the placeholder text.
-    fn set_placeholder_font(
-        &mut self,
-        platform: &mut P,
-        font: Font,
-        align: TextAlign,
-        wrap: TextWrap,
-    );
+    fn set_placeholder_color(&mut self, platform: &mut P, color: Color);
 
     /// Set the placeholder `text`.
     fn set_placeholder_text(&mut self, platform: &mut P, text: String);
@@ -86,13 +80,7 @@ where
         unreachable!()
     }
 
-    fn set_placeholder_font(
-        &mut self,
-        _platform: &mut P,
-        _font: Font,
-        _align: TextAlign,
-        _wrap: TextWrap,
-    ) {
+    fn set_placeholder_color(&mut self, _platform: &mut P, _color: Color) {
         unreachable!()
     }
 

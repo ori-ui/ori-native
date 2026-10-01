@@ -46,7 +46,8 @@ fn ui(data: &Data) -> impl Effect<Data> + use<> {
             .justify_content(Justify::Center)
             .align_items(Align::Center)
             .background(theme::BACKGROUND),
-        ),
+        )
+        .title("Todo (examples/todo.rs)"),
         receive(
             None,
             |data: &mut Data, Remove(index)| {

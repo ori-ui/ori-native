@@ -19,7 +19,7 @@ pub trait Measurable<P>: 'static {
         platform: &mut P,
         known_size: Size<Option<f32>>,
         available_space: Size<AvailableSpace>,
-    ) -> Size<f32>;
+    ) -> (Size<f32>, Option<f32>);
 }
 
 impl<P> Measurable<P> for Infallible {
@@ -28,7 +28,7 @@ impl<P> Measurable<P> for Infallible {
         _platform: &mut P,
         _known_size: Size<Option<f32>>,
         _available_space: Size<AvailableSpace>,
-    ) -> Size<f32> {
+    ) -> (Size<f32>, Option<f32>) {
         unreachable!()
     }
 }
@@ -58,6 +58,7 @@ impl<T> CachedMeasurable<T> {
 #[derive(Clone, Debug)]
 struct CachedSize {
     size:            Size<f32>,
+    baseline:        Option<f32>,
     known_size:      Size<Option<f32>>,
     available_space: Size<AvailableSpace>,
 }
@@ -71,24 +72,25 @@ where
         platform: &mut P,
         known_size: Size<Option<f32>>,
         available_space: Size<AvailableSpace>,
-    ) -> Size<f32> {
+    ) -> (Size<f32>, Option<f32>) {
         for cached_size in &self.cache {
             if cached_size.known_size == known_size
                 && cached_size.available_space == available_space
             {
-                return cached_size.size;
+                return (cached_size.size, cached_size.baseline);
             }
         }
 
-        let size = self.inner.measure(platform, known_size, available_space);
+        let (size, baseline) = self.inner.measure(platform, known_size, available_space);
 
         self.cache.push(CachedSize {
             size,
+            baseline,
             known_size,
             available_space,
         });
 
-        size
+        (size, baseline)
     }
 }
 
@@ -251,13 +253,14 @@ impl<P> LayoutTree<P> {
                 height: Self::into_available_space(space.height),
             },
             |input, _node, context, style| {
-                taffy::compute_leaf_layout(
+                let mut baseline = None;
+                let mut output = taffy::compute_leaf_layout(
                     input,
                     style,
                     |_, _| 0.0,
                     |known_size, available_space| match context {
                         Some(leaf) => {
-                            let size = leaf.measure(
+                            let (size, measured_baseline) = leaf.measure(
                                 platform,
                                 Size {
                                     width:  known_size.width,
@@ -269,6 +272,8 @@ impl<P> LayoutTree<P> {
                                 },
                             );
 
+                            baseline = measured_baseline;
+
                             taffy::Size {
                                 width:  size.width,
                                 height: size.height,
@@ -277,7 +282,10 @@ impl<P> LayoutTree<P> {
 
                         None => taffy::Size::ZERO,
                     },
-                )
+                );
+
+                output.baselines.first = baseline;
+                output
             },
         );
     }

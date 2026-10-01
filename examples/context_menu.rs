@@ -53,6 +53,7 @@ fn ui(_data: &Data) -> impl Effect<Data> + use<> {
             )
         },
     ))
+    .title("Context menu (examples/context_menu.rs)")
 }
 
 fn menu_button<T, A>(
