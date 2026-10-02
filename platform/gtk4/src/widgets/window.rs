@@ -12,6 +12,8 @@ use crate::{Platform, key};
 impl NativeWindow<Platform> for Window {
     fn build(platform: &mut Platform, contents: gtk4::Widget) -> Self {
         let window = Self::new(&platform.application);
+        window.set_focusable(true);
+        window.set_focus(Some(&window));
         window.set_child(&contents);
         window.show();
 
@@ -23,7 +25,7 @@ impl NativeWindow<Platform> for Window {
 
             move |_, _, _, _| {
                 if let Some(window) = window.upgrade() {
-                    window.set_focus(None::<&gtk4::Widget>);
+                    window.set_focus(Some(&window));
                 }
             }
         });
@@ -145,13 +147,21 @@ impl NativeWindow<Platform> for Window {
         let on_key = Rc::new(on_key);
 
         controller.connect_key_pressed({
+            let window = self.downgrade();
             let on_key = on_key.clone();
 
             move |_, key, _code, modifiers| {
-                let key = key::convert_key(key);
+                let ori_key = key::convert_key(key);
                 let modifiers = key::convert_modifiers(modifiers);
 
-                if on_key(key, modifiers, true) {
+                if on_key(ori_key, modifiers, true) {
+                    glib::Propagation::Stop
+                } else if key == gdk4::Key::Escape
+                    && let Some(window) = window.upgrade()
+                    && let Some(focus) = window.focus()
+                    && focus != window
+                {
+                    window.set_focus(Some(&window));
                     glib::Propagation::Stop
                 } else {
                     glib::Propagation::Proceed

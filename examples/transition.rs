@@ -113,6 +113,7 @@ where
                 },
             )
         })
+        .focusable(true)
         .on_press(move |data, _| (self.on_press)(data))
     }
 }
