@@ -429,10 +429,20 @@ where
                 height: AvailableSpace::Definite(height),
             },
 
-            Sizing::Content => Size {
-                width:  AvailableSpace::MaxContent,
-                height: AvailableSpace::MaxContent,
-            },
+            Sizing::Content => {
+                let (width, height) = self.window.get_preferred_size(&mut cx.platform);
+
+                Size {
+                    width:  width.map_or(
+                        AvailableSpace::MaxContent,
+                        AvailableSpace::Definite,
+                    ),
+                    height: height.map_or(
+                        AvailableSpace::MaxContent,
+                        AvailableSpace::Definite,
+                    ),
+                }
+            }
         };
 
         (cx.layout).compute_layout(&mut cx.platform, self.layout, size);
