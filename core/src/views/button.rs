@@ -34,6 +34,8 @@ pub struct Button<V, F> {
     color_hovered: Option<Color>,
     color_pressed: Option<Color>,
 
+    focusable: bool,
+
     border:         BorderStyle,
     border_focused: Color,
 }
@@ -53,6 +55,8 @@ impl<V, F> Button<V, F> {
 
             color_hovered: None,
             color_pressed: None,
+
+            focusable: true,
 
             border: BorderStyle {
                 color: Color::TRANSPARENT,
@@ -77,6 +81,12 @@ impl<V, F> Button<V, F> {
     /// Set the color when pressed.
     pub fn color_pressed(mut self, color: Color) -> Self {
         self.color_pressed = Some(color);
+        self
+    }
+
+    /// Set whether the button should be focusable.
+    pub fn focusable(mut self, focusable: bool) -> Self {
+        self.focusable = focusable;
         self
     }
 
@@ -172,7 +182,7 @@ where
                         )
                     },
                 )
-                .focusable(true)
+                .focusable(self.focusable)
                 .on_press(
                     move |(state, data), _| match state.on_click {
                         Some(ref mut on_click) => on_click(data).into(),
