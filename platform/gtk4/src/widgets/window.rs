@@ -12,8 +12,6 @@ use crate::{Platform, key};
 impl NativeWindow<Platform> for Window {
     fn build(platform: &mut Platform, contents: gtk4::Widget) -> Self {
         let window = Self::new(&platform.application);
-        window.set_focusable(true);
-        window.set_focus(Some(&window));
         window.set_child(&contents);
         window.show();
 
@@ -25,7 +23,7 @@ impl NativeWindow<Platform> for Window {
 
             move |_, _, _, _| {
                 if let Some(window) = window.upgrade() {
-                    window.set_focus(Some(&window));
+                    window.unfocus();
                 }
             }
         });
@@ -158,10 +156,8 @@ impl NativeWindow<Platform> for Window {
                     glib::Propagation::Stop
                 } else if key == gdk4::Key::Escape
                     && let Some(window) = window.upgrade()
-                    && let Some(focus) = window.focus()
-                    && focus != window
+                    && window.unfocus()
                 {
-                    window.set_focus(Some(&window));
                     glib::Propagation::Stop
                 } else {
                     glib::Propagation::Proceed
@@ -293,6 +289,15 @@ impl Window {
 
         self.imp().group.add(child.as_ref().clone());
     }
+
+    pub fn unfocus(&self) -> bool {
+        if !self.imp().group.is_focus() {
+            self.set_focus(Some(&self.imp().group));
+            true
+        } else {
+            false
+        }
+    }
 }
 
 mod imp {
@@ -302,10 +307,13 @@ mod imp {
     };
 
     use glib::subclass::{object::ObjectImpl, types::ObjectSubclass};
-    use gtk4::subclass::{
-        prelude::ApplicationWindowImpl,
-        widget::{WidgetImpl, WidgetImplExt},
-        window::WindowImpl,
+    use gtk4::{
+        prelude::WidgetExt,
+        subclass::{
+            prelude::ApplicationWindowImpl,
+            widget::{WidgetImpl, WidgetImplExt},
+            window::WindowImpl,
+        },
     };
 
     use crate::widgets::Group;
@@ -319,11 +327,14 @@ mod imp {
 
     impl Default for ApplicationWindow {
         fn default() -> Self {
+            let group = Group::new();
+            group.set_focusable(true);
+
             Self {
-                group:            Group::new(),
+                group,
                 on_size_allocate: RefCell::new(Box::new(|| {})),
-                on_snapshot:      RefCell::new(Box::new(|| {})),
-                previous_frame:   Rc::new(Cell::new(None)),
+                on_snapshot: RefCell::new(Box::new(|| {})),
+                previous_frame: Rc::new(Cell::new(None)),
             }
         }
     }
