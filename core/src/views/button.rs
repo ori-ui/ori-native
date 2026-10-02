@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use keyboard_types::{Modifiers, NamedKey};
 use ori::{
-    Action, Builder, BuilderMarker,
+    Action, Builder, BuilderMarker, ViewId,
     views::{maybe, with, without},
 };
 
@@ -31,10 +31,13 @@ pub struct Button<V, F> {
     corners:    Corners<f32>,
     transition: Rc<dyn Transition>,
 
+    view_id: Option<ViewId>,
+
     color_hovered: Option<Color>,
     color_pressed: Option<Color>,
 
-    focusable: bool,
+    focusable:  bool,
+    auto_focus: bool,
 
     border:         BorderStyle,
     border_focused: Color,
@@ -53,10 +56,13 @@ impl<V, F> Button<V, F> {
             corners: Corners::all(0.0),
             transition: Rc::new(Ease(0.05)),
 
+            view_id: None,
+
             color_hovered: None,
             color_pressed: None,
 
             focusable: true,
+            auto_focus: false,
 
             border: BorderStyle {
                 color: Color::TRANSPARENT,
@@ -87,6 +93,18 @@ impl<V, F> Button<V, F> {
     /// Set whether the button should be focusable.
     pub fn focusable(mut self, focusable: bool) -> Self {
         self.focusable = focusable;
+        self
+    }
+
+    /// Set whether the button should automatically be focused when built.
+    pub fn auto_focus(mut self, auto_focus: bool) -> Self {
+        self.auto_focus = auto_focus;
+        self
+    }
+
+    /// Set the [`ViewId`] of the button.
+    pub fn view_id(mut self, view_id: impl Into<Option<ViewId>>) -> Self {
+        self.view_id = view_id.into();
         self
     }
 
@@ -183,6 +201,8 @@ where
                     },
                 )
                 .focusable(self.focusable)
+                .auto_focus(self.auto_focus)
+                .view_id(self.view_id)
                 .on_press(
                     move |(state, data), _| match state.on_click {
                         Some(ref mut on_click) => on_click(data).into(),

@@ -2,8 +2,8 @@ use keyboard_types::Modifiers;
 use ori::{Action, Message, Mut, Proxied, Proxy, Tracked, View, ViewId, ViewMarker};
 
 use crate::{
-    Context, Input, InputHandler, MatchKey, Platform, PressEvent, PressableEvent, ScrollEvent,
-    WidgetView, event::MoveEvent, widget::WidgetMut, widgets::PressableWidget,
+    Context, Input, InputHandler, MatchKey, Platform, PressEvent, PressableEvent, RequestFocus,
+    ScrollEvent, WidgetView, event::MoveEvent, widget::WidgetMut, widgets::PressableWidget,
 };
 
 /// [`View`] that reacts to presses and focus.
@@ -31,8 +31,10 @@ pub struct Pressable<T, F> {
     build:      F,
     scrollable: bool,
     focusable:  bool,
+    auto_focus: bool,
     on_event:   Vec<BoxedCallback<T>>,
     input:      Input<T>,
+    view_id:    Option<ViewId>,
 }
 
 type BoxedCallback<T> = Box<dyn FnMut(&mut T, PressableEvent) -> Action>;
@@ -44,8 +46,10 @@ impl<T, F> Pressable<T, F> {
             build,
             scrollable: false,
             focusable: false,
+            auto_focus: false,
             on_event: Vec::new(),
             input: Input::new(),
+            view_id: None,
         }
     }
 
@@ -58,6 +62,18 @@ impl<T, F> Pressable<T, F> {
     /// Set whether the view is scrollable.
     pub fn scrollable(mut self, scrollable: bool) -> Self {
         self.scrollable = scrollable;
+        self
+    }
+
+    /// Set whether the view should be automatically focused when built.
+    pub fn auto_focus(mut self, auto_focus: bool) -> Self {
+        self.auto_focus = auto_focus;
+        self
+    }
+
+    /// Set the [`ViewId`], used to receive [`RequestFocus`](crate::RequestFocus) messages.
+    pub fn view_id(mut self, view_id: impl Into<Option<ViewId>>) -> Self {
+        self.view_id = view_id.into();
         self
     }
 
@@ -244,6 +260,14 @@ where
             }
         });
 
+        if self.auto_focus {
+            widget.request_focus(cx);
+        }
+
+        if let Some(view_id) = self.view_id {
+            cx.register(view_id);
+        }
+
         let state = PressableState {
             view_id,
             state,
@@ -253,6 +277,7 @@ where
             build: self.build,
             on_event: self.on_event,
             handler,
+            user_view_id: self.view_id,
         };
 
         (widget, state)
@@ -296,6 +321,18 @@ where
         if state.focusable != self.focusable {
             state.focusable = self.focusable;
             element.set_focusable(cx, self.focusable);
+        }
+
+        if state.user_view_id != self.view_id {
+            if let Some(view_id) = state.user_view_id {
+                cx.unregister(view_id);
+            }
+
+            if let Some(view_id) = self.view_id {
+                cx.register(view_id);
+            }
+
+            state.user_view_id = self.view_id;
         }
 
         state.build = self.build;
@@ -357,6 +394,13 @@ where
             return action;
         }
 
+        if let Some(view_id) = state.user_view_id
+            && let Some(RequestFocus) = message.take(view_id)
+        {
+            element.request_focus(cx);
+            return Action::new();
+        }
+
         let (mut parent, contents) = element.contents_mut();
         let widget = WidgetMut::new(&mut parent, contents);
 
@@ -373,6 +417,10 @@ where
         let element = element.teardown(cx);
         V::teardown(element, state.state, cx);
         cx.unregister(state.view_id);
+
+        if let Some(view_id) = state.user_view_id {
+            cx.unregister(view_id);
+        }
     }
 }
 
@@ -388,6 +436,9 @@ where
     build:      F,
     scrollable: bool,
     focusable:  bool,
-    on_event:   Vec<BoxedCallback<T>>,
-    handler:    InputHandler<T>,
+
+    on_event: Vec<BoxedCallback<T>>,
+    handler:  InputHandler<T>,
+
+    user_view_id: Option<ViewId>,
 }

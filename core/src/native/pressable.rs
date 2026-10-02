@@ -38,6 +38,9 @@ where
         platform: &mut P,
         on_key: impl Fn(Key, Modifiers, bool) -> bool + 'static,
     );
+
+    /// Request that the widget become focused.
+    fn request_focus(&mut self, platform: &mut P);
 }
 
 impl<P> NativePressable<P> for Unsupported
@@ -81,6 +84,10 @@ where
         _platform: &mut P,
         _on_key: impl Fn(Key, Modifiers, bool) -> bool + 'static,
     ) {
+        unreachable!()
+    }
+
+    fn request_focus(&mut self, _platform: &mut P) {
         unreachable!()
     }
 }

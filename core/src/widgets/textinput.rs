@@ -40,12 +40,12 @@ where
     }
 
     /// Set the current `text`.
-    pub fn set_text(&mut self, cx: &mut Context<P>, text: String) {
+    pub fn set_text(&mut self, cx: &mut Context<P>, text: &str) {
         self.native.set_text(&mut cx.platform, text);
     }
 
     /// Set the placeholder `text`.
-    pub fn set_placeholder_text(&mut self, cx: &mut Context<P>, text: String) {
+    pub fn set_placeholder_text(&mut self, cx: &mut Context<P>, text: &str) {
         self.native.set_placeholder_text(&mut cx.platform, text);
     }
 
@@ -72,6 +72,11 @@ where
     /// Set whether to accept tabs.
     pub fn set_accept_tab(&mut self, cx: &mut Context<P>, accept_tab: bool) {
         self.native.set_accept_tab(&mut cx.platform, accept_tab);
+    }
+
+    /// Request that the widget become focused.
+    pub fn request_focus(&mut self, cx: &mut Context<P>) {
+        self.native.request_focus(&mut cx.platform);
     }
 
     /// Update the layout after changing text properties.

@@ -80,6 +80,7 @@ impl NativeTextInput<Platform> for TextInput {
     }
 
     fn set_accept_tab(&mut self, _platform: &mut Platform, _accept_tab: bool) {}
+    fn request_focus(&mut self, _platform: &mut Platform) {}
 
     fn set_font(&mut self, platform: &mut Platform, font: Font, align: TextAlign, _wrap: TextWrap) {
         let _ = platform.jni(|env, activity| {
@@ -128,13 +129,27 @@ impl NativeTextInput<Platform> for TextInput {
         });
     }
 
-    fn set_text(&mut self, platform: &mut Platform, text: String) {
+    fn set_text(&mut self, platform: &mut Platform, text: &str) {
         let _ = platform.jni(|env, activity| {
             let text = env.new_string(text)?;
 
             env.call_method(
                 activity,
                 jni_str!("textInputSetText"),
+                jni_sig!((long, JString)),
+                &[self.id.into(), (&text).into()],
+            )?
+            .v()
+        });
+    }
+
+    fn set_placeholder_text(&mut self, platform: &mut Platform, text: &str) {
+        let _ = platform.jni(|env, activity| {
+            let text = env.new_string(text)?;
+
+            env.call_method(
+                activity,
+                jni_str!("textInputSetPlaceholderText"),
                 jni_sig!((long, JString)),
                 &[self.id.into(), (&text).into()],
             )?
@@ -163,20 +178,6 @@ impl NativeTextInput<Platform> for TextInput {
                     color.b.into(),
                     color.a.into(),
                 ],
-            )?
-            .v()
-        });
-    }
-
-    fn set_placeholder_text(&mut self, platform: &mut Platform, text: String) {
-        let _ = platform.jni(|env, activity| {
-            let text = env.new_string(text)?;
-
-            env.call_method(
-                activity,
-                jni_str!("textInputSetPlaceholderText"),
-                jni_sig!((long, JString)),
-                &[self.id.into(), (&text).into()],
             )?
             .v()
         });

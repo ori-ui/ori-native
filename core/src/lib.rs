@@ -8,6 +8,7 @@ mod event;
 mod input;
 mod layout;
 mod lifecycle;
+mod message;
 mod platform;
 mod safearea;
 mod style;
@@ -26,6 +27,7 @@ pub use layout::{
     Allocation, AvailableSpace, CachedMeasurable, LayoutNode, LayoutTree, Measurable,
 };
 pub use lifecycle::{AnimateRequest, LayoutRequest};
+pub use message::RequestFocus;
 pub use platform::{Platform, Unsupported};
 pub use safearea::SafeAreaInsets;
 pub use style::{

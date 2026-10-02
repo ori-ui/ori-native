@@ -58,9 +58,9 @@ pub mod prelude {
         Action, Align, App, BoxedView, Builder, BuilderMarker, Button, Color, Context, Corners,
         Direction, Effect, Element, Font, Fract, Justify, Key, LayoutStyle, Length, Message,
         Modifiers, NamedKey, NavigationBar, Newline, Overflow, Position, PressableEvent, Proxy,
-        SafeAreaInsets, Shadow, Side, Sides, Size, Sizing, StatusBar, Stretch, StyleBorder,
-        StyleCorners, StyleFlexContainer, StyleLayout, StylePadding, StyleShadow, Submit,
-        TextAlign, TextWrap, View, ViewId, ViewSeq, Weight, views::*,
+        RequestFocus, SafeAreaInsets, Shadow, Side, Sides, Size, Sizing, StatusBar, Stretch,
+        StyleBorder, StyleCorners, StyleFlexContainer, StyleLayout, StylePadding, StyleShadow,
+        Submit, TextAlign, TextWrap, View, ViewId, ViewSeq, Weight, views::*,
     };
 
     #[allow(unused_imports)]

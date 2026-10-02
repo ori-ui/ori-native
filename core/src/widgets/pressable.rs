@@ -78,6 +78,11 @@ where
     ) {
         self.native.set_on_key(&mut cx.platform, on_key);
     }
+
+    /// Request that the widget become focused.
+    pub fn request_focus(&mut self, cx: &mut Context<P>) {
+        self.native.request_focus(&mut cx.platform);
+    }
 }
 
 impl<P, W> Widget<P> for PressableWidget<P, W>

@@ -1,7 +1,7 @@
 use std::{cell::Cell, rc::Rc};
 
 use glib::object::{Cast, ObjectExt};
-use gtk4::prelude::{FixedExt, GestureExt, GestureSingleExt, WidgetExt};
+use gtk4::prelude::{FixedExt, GestureExt, GestureSingleExt, GtkWindowExt, WidgetExt};
 use ori_native_core::{
     Button, Key, Modifiers, MoveEvent, Point, PressEvent, PressableEvent, ScrollEvent,
     native::NativePressable,
@@ -246,6 +246,24 @@ impl NativePressable<Platform> for Pressable {
 
         self.key = Some(controller.clone());
         self.fixed.add_controller(controller);
+    }
+
+    fn request_focus(&mut self, _platform: &mut Platform) {
+        if self.fixed.is_realized() {
+            if let Some(root) = self.fixed.root()
+                && let Some(window) = root.downcast_ref::<gtk4::Window>()
+            {
+                window.set_focus(Some(&self.fixed));
+            }
+        } else {
+            self.fixed.connect_realize(|fixed| {
+                if let Some(root) = fixed.root()
+                    && let Some(window) = root.downcast_ref::<gtk4::Window>()
+                {
+                    window.set_focus(Some(fixed));
+                }
+            });
+        }
     }
 }
 

@@ -88,6 +88,8 @@ impl NativePressable<Platform> for Pressable {
         _on_key: impl Fn(Key, Modifiers, bool) -> bool + 'static,
     ) {
     }
+
+    fn request_focus(&mut self, _platform: &mut Platform) {}
 }
 
 #[unsafe(no_mangle)]

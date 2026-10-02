@@ -25,23 +25,26 @@ where
     /// Set the `submit` behaviour.
     fn set_submit(&mut self, platform: &mut P, submit: Submit);
 
-    /// Set whether text input accepts and inserts tabs.
+    /// Set whether the text input accepts and inserts tabs.
     fn set_accept_tab(&mut self, platform: &mut P, accept_tab: bool);
 
     /// Set the `font` of the text.
     fn set_font(&mut self, platform: &mut P, font: Font, align: TextAlign, wrap: TextWrap);
 
     /// Set the `text`.
-    fn set_text(&mut self, platform: &mut P, text: String);
+    fn set_text(&mut self, platform: &mut P, text: &str);
 
     /// Set the `font` of the placeholder text.
     fn set_placeholder_color(&mut self, platform: &mut P, color: Color);
 
     /// Set the placeholder `text`.
-    fn set_placeholder_text(&mut self, platform: &mut P, text: String);
+    fn set_placeholder_text(&mut self, platform: &mut P, text: &str);
 
     /// Get the [`Measurable`] that measures the minimum size of the input.
     fn get_measureable(&mut self, platform: &mut P) -> impl Measurable<P>;
+
+    /// Request that the widget become focused.
+    fn request_focus(&mut self, platform: &mut P);
 }
 
 impl<P> NativeTextInput<P> for Unsupported
@@ -72,11 +75,15 @@ where
         unreachable!()
     }
 
+    fn request_focus(&mut self, _platform: &mut P) {
+        unreachable!()
+    }
+
     fn set_font(&mut self, _platform: &mut P, _font: Font, _align: TextAlign, _wrap: TextWrap) {
         unreachable!()
     }
 
-    fn set_text(&mut self, _platform: &mut P, _text: String) {
+    fn set_text(&mut self, _platform: &mut P, _text: &str) {
         unreachable!()
     }
 
@@ -84,7 +91,7 @@ where
         unreachable!()
     }
 
-    fn set_placeholder_text(&mut self, _platform: &mut P, _text: String) {
+    fn set_placeholder_text(&mut self, _platform: &mut P, _text: &str) {
         unreachable!()
     }
 

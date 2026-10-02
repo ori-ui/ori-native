@@ -5,7 +5,7 @@ use std::{
 
 use gtk4::prelude::ApplicationExt;
 use ori::{Effect, Message, Proxied};
-use ori_native_core::Context;
+use ori_native_core::{Context, PressableEvent, TextInputEvent};
 use tracing_subscriber::layer::SubscriberExt;
 
 use crate::Platform;
@@ -233,6 +233,18 @@ where
                         self.data,
                         &mut message,
                     );
+
+                    if let Some(target) = message.target()
+                        && !message.is::<PressableEvent>()
+                        && !message.is::<TextInputEvent>()
+                        && !message.is_taken()
+                    {
+                        tracing::warn!(
+                            target=?target,
+                            type=message.type_name(),
+                            "message sent but not received"
+                        );
+                    }
 
                     if action.take_rebuild() {
                         let view = (self.build)(self.data);

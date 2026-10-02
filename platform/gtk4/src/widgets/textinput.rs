@@ -1,7 +1,7 @@
 use std::{cell::Cell, rc::Rc};
 
 use glib::object::{Cast, ObjectExt};
-use gtk4::prelude::{TextBufferExt, TextTagExt, TextViewExt, WidgetExt};
+use gtk4::prelude::{GtkWindowExt, TextBufferExt, TextTagExt, TextViewExt, WidgetExt};
 use ori_native_core::{
     AvailableSpace, Color, Font, Measurable, Newline, Size, Stretch, Submit, TextAlign,
     TextInputEvent, TextWrap, native::NativeTextInput,
@@ -27,7 +27,7 @@ impl NativeTextInput<Platform> for TextInput {
         let view = gtk4::TextView::new();
         let placeholder = gtk4::TextView::new();
         placeholder.set_sensitive(false);
-        placeholder.set_visible(false);
+        placeholder.set_visible(true);
 
         overlay.set_child(Some(&view));
         overlay.add_overlay(&placeholder);
@@ -214,12 +214,18 @@ impl NativeTextInput<Platform> for TextInput {
         });
     }
 
-    fn set_text(&mut self, _platform: &mut Platform, text: String) {
-        self.view.buffer().set_text(&text);
+    fn set_text(&mut self, _platform: &mut Platform, text: &str) {
+        self.view.buffer().set_text(text);
+
+        if !text.is_empty() && !self.view.is_focus() {
+            self.placeholder.set_visible(false);
+        }
     }
 
-    fn set_placeholder_text(&mut self, _platform: &mut Platform, text: String) {
+    fn set_placeholder_text(&mut self, _platform: &mut Platform, text: &str) {
         let buffer = self.placeholder.buffer();
+        buffer.set_text(text);
+
         let tag_table = buffer.tag_table();
 
         tag_table.foreach(|tag| {
@@ -229,13 +235,29 @@ impl NativeTextInput<Platform> for TextInput {
                 &buffer.end_iter(),
             );
         });
-
-        buffer.set_text(&text);
     }
 
     fn get_measureable(&mut self, _platform: &mut Platform) -> impl Measurable<Platform> {
         Layout {
             view: self.view.clone(),
+        }
+    }
+
+    fn request_focus(&mut self, _platform: &mut Platform) {
+        if self.view.is_realized() {
+            if let Some(root) = self.view.root()
+                && let Some(window) = root.downcast_ref::<gtk4::Window>()
+            {
+                window.set_focus(Some(&self.view));
+            }
+        } else {
+            self.view.connect_realize(|view| {
+                if let Some(root) = view.root()
+                    && let Some(window) = root.downcast_ref::<gtk4::Window>()
+                {
+                    window.set_focus(Some(view));
+                }
+            });
         }
     }
 }

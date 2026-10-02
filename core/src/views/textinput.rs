@@ -3,8 +3,8 @@ use std::borrow::Cow;
 use ori::{Action, Message, Mut, Proxied, Proxy, Tracked, View, ViewId, ViewMarker};
 
 use crate::{
-    Color, Context, Font, LayoutStyle, Newline, Platform, Stretch, StyleLayout, Submit, TextAlign,
-    TextWrap, Weight, event::TextInputEvent, widgets::TextInputWidget,
+    Color, Context, Font, LayoutStyle, Newline, Platform, RequestFocus, Stretch, StyleLayout,
+    Submit, TextAlign, TextWrap, Weight, event::TextInputEvent, widgets::TextInputWidget,
 };
 
 /// [`View`] of a text input.
@@ -28,6 +28,8 @@ pub struct TextInput<T> {
     newline:    Newline,
     submit:     Submit,
     accept_tab: bool,
+    auto_focus: bool,
+    view_id:    Option<ViewId>,
     on_event:   Vec<BoxedCallback<T>>,
 }
 
@@ -43,6 +45,8 @@ impl<T> TextInput<T> {
     /// Create new [`TextInput`].
     pub fn new() -> Self {
         Self {
+            view_id: None,
+
             layout: LayoutStyle::default(),
             font:   Default::default(),
             text:   None,
@@ -56,6 +60,7 @@ impl<T> TextInput<T> {
             newline:    Newline::Enter,
             submit:     Submit::Blur,
             accept_tab: true,
+            auto_focus: false,
             on_event:   Vec::new(),
         }
     }
@@ -147,6 +152,18 @@ impl<T> TextInput<T> {
     /// Set whether to accept `tab` inputs.
     pub fn accept_tab(mut self, accept_tab: bool) -> Self {
         self.accept_tab = accept_tab;
+        self
+    }
+
+    /// Set whether the view should be automatically focused when built.
+    pub fn auto_focus(mut self, auto_focus: bool) -> Self {
+        self.auto_focus = auto_focus;
+        self
+    }
+
+    /// Set the [`ViewId`], used to receive [`RequestFocus`](crate::RequestFocus) messages.
+    pub fn view_id(mut self, view_id: impl Into<Option<ViewId>>) -> Self {
+        self.view_id = view_id.into();
         self
     }
 
@@ -265,11 +282,11 @@ where
             self.wrap,
         );
 
-        if let Some(text) = self.text.clone() {
+        if let Some(ref text) = self.text {
             widget.set_text(cx, text);
         }
 
-        widget.set_placeholder_text(cx, self.placeholder.clone());
+        widget.set_placeholder_text(cx, &self.placeholder);
         widget.set_placeholder_color(cx, self.placeholder_color);
 
         widget.update_layout(cx);
@@ -277,6 +294,14 @@ where
         widget.set_newline(cx, self.newline);
         widget.set_submit(cx, self.submit);
         widget.set_accept_tab(cx, self.accept_tab);
+
+        if self.auto_focus {
+            widget.request_focus(cx);
+        }
+
+        if let Some(view_id) = self.view_id {
+            cx.register(view_id);
+        }
 
         let state = TextInputState {
             layout: self.layout,
@@ -293,6 +318,8 @@ where
             newline: self.newline,
             submit: self.submit,
             accept_tab: self.accept_tab,
+
+            user_view_id: self.view_id,
 
             view_id,
             on_event: self.on_event,
@@ -313,34 +340,46 @@ where
             element.set_layout(cx, self.layout);
         }
 
-        let mut changed = false;
+        let mut layout_changed = false;
 
         if state.font != self.font || state.align != self.align || state.wrap != self.wrap {
             state.font = self.font.clone();
             state.align = self.align;
             state.wrap = self.wrap;
             element.set_font(cx, self.font, self.align, self.wrap);
-            changed |= true;
+            layout_changed = true;
         }
 
         if let Some(text) = self.text
             && state.text != text
         {
-            state.text = text.clone();
-            element.set_text(cx, text);
-            changed |= true;
+            element.set_text(cx, &text);
+            state.text = text;
+            layout_changed = true;
+        }
+
+        if state.user_view_id != self.view_id {
+            if let Some(view_id) = state.user_view_id {
+                cx.unregister(view_id);
+            }
+
+            if let Some(view_id) = self.view_id {
+                cx.register(view_id);
+            }
+
+            state.user_view_id = self.view_id;
         }
 
         if state.placeholder_color != self.placeholder_color {
             state.placeholder_color = self.placeholder_color;
             element.set_placeholder_color(cx, self.placeholder_color);
-            changed |= true;
+            layout_changed = true;
         }
 
         if state.placeholder != self.placeholder {
-            state.placeholder = self.placeholder.clone();
-            element.set_placeholder_text(cx, self.placeholder);
-            changed |= true;
+            element.set_placeholder_text(cx, &self.placeholder);
+            state.placeholder = self.placeholder;
+            layout_changed = true;
         }
 
         if state.newline != self.newline {
@@ -358,7 +397,7 @@ where
             element.set_accept_tab(cx, self.accept_tab);
         }
 
-        if changed {
+        if layout_changed {
             element.update_layout(cx);
         }
 
@@ -366,9 +405,9 @@ where
     }
 
     fn message(
-        _element: Mut<'_, Self::Element>,
+        mut element: Mut<'_, Self::Element>,
         state: &mut Self::State,
-        _cx: &mut Context<P>,
+        cx: &mut Context<P>,
         data: &mut T,
         message: &mut Message,
     ) -> Action {
@@ -384,6 +423,11 @@ where
             }
 
             action
+        } else if let Some(view_id) = state.user_view_id
+            && let Some(RequestFocus) = message.take(view_id)
+        {
+            element.request_focus(cx);
+            Action::new()
         } else {
             Action::new()
         }
@@ -392,6 +436,10 @@ where
     fn teardown(element: Self::Element, state: Self::State, cx: &mut Context<P>) {
         element.teardown(cx);
         cx.unregister(state.view_id);
+
+        if let Some(view_id) = state.user_view_id {
+            cx.unregister(view_id);
+        }
     }
 }
 
@@ -411,6 +459,8 @@ pub struct TextInputState<T> {
     newline:    Newline,
     submit:     Submit,
     accept_tab: bool,
+
+    user_view_id: Option<ViewId>,
 
     view_id:  ViewId,
     on_event: Vec<BoxedCallback<T>>,

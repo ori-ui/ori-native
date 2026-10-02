@@ -29,6 +29,8 @@ mod theme {
     pub const TEXT: Color = Color::hex("#f9f9f8");
 }
 
+const INPUT: ViewId = ViewId::new("example.input");
+
 fn ui(data: &Data) -> impl Effect<Data> + use<> {
     effects((
         window(
@@ -47,7 +49,10 @@ fn ui(data: &Data) -> impl Effect<Data> + use<> {
             .align_items(Align::Center)
             .background(theme::BACKGROUND),
         )
-        .title("Todo (examples/todo.rs)"),
+        .title("Todo (examples/todo.rs)")
+        .on_key('f', Modifiers::default(), |_| {
+            Message::new(RequestFocus, INPUT)
+        }),
         receive(
             None,
             |data: &mut Data, Remove(index)| {
@@ -67,6 +72,8 @@ fn input() -> impl View<Data> + use<> {
                 .newline(Newline::Never)
                 .submit(Submit::Nothing)
                 .accept_tab(false)
+                .auto_focus(true)
+                .view_id(INPUT)
                 .color(theme::TEXT)
                 .placeholder_color(theme::TEXT.fade(0.6))
                 .on_change(|(name, _), text| *name = text)
