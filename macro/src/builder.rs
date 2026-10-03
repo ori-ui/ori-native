@@ -22,20 +22,20 @@ pub fn builder(
 
     let ori_native = find_ori_native();
     let builder: Ident = Ident::new(
-        &builder_name(&ident.to_string()),
+        &snake_to_pascal_case(&ident.to_string()),
         Span::call_site(),
     );
 
     let (fn_impl_generics, _, fn_where_clause) = item.sig.generics.split_for_impl();
 
+    let mut impl_types = Vec::new();
     let mut generics = item.sig.generics.clone();
-    let mut types = Vec::new();
-    let mut impl_folder = ImplFolder {
-        types:    &mut types,
-        generics: &mut generics,
-    };
 
-    let arguments = get_arguments(&item.sig, &mut impl_folder)?;
+    let arguments = get_arguments(
+        &item.sig,
+        &mut impl_types,
+        &mut generics,
+    )?;
 
     let pats = argument_pats(&arguments);
     let fields = argument_fields(&arguments);
@@ -86,7 +86,7 @@ pub fn builder(
     )?;
 
     let marker_generics = marker_generics(&generics);
-    let fn_type_generics = fn_type_generics(&item.sig.generics, &types);
+    let fn_type_generics = fn_type_generics(&item.sig.generics, &impl_types);
 
     let data = get_data(&item.sig.output).expect("invalid return type");
 
@@ -102,9 +102,9 @@ pub fn builder(
     };
 
     let expanded = quote! {
-        #(#attrs)*
         #[automatically_derived]
-        #vis struct #builder #type_generics
+        #(#attrs)* #vis
+        struct #builder #type_generics
             #where_clause
         {
             #(#fields,)*
@@ -112,7 +112,8 @@ pub fn builder(
         }
 
         #[automatically_derived]
-        impl #impl_generics #ori_native::BuilderMarker for #builder #type_generics #where_clause {}
+        impl #impl_generics #ori_native::BuilderMarker
+            for #builder #type_generics #where_clause {}
 
         #[automatically_derived]
         impl #impl_generics #ori_native::Builder<#ori_native::Context, #data>
@@ -137,7 +138,8 @@ pub fn builder(
         #border_impl
         #flex_impl
 
-        #vis fn #ident #fn_impl_generics (#(#inputs),*) -> #builder #fn_type_generics
+        #(#attrs)* #vis
+        fn #ident #fn_impl_generics (#(#inputs),*) -> #builder #fn_type_generics
             #fn_where_clause
         {
             #builder {
@@ -164,8 +166,9 @@ struct Argument {
 }
 
 struct ImplFolder<'a> {
-    types:    &'a mut Vec<TypeImplTrait>,
-    generics: &'a mut Generics,
+    ident:      Option<&'a Ident>,
+    impl_types: &'a mut Vec<TypeImplTrait>,
+    generics:   &'a mut Generics,
 }
 
 impl ImplFolder<'_> {}
@@ -174,12 +177,16 @@ impl<'a> Fold for ImplFolder<'a> {
     fn fold_type(&mut self, ty: Type) -> Type {
         match ty {
             Type::ImplTrait(ty) => {
-                self.types.push(ty.clone());
-                let ident = Ident::new(
-                    &format!("T{}", self.types.len()),
-                    ty.span(),
-                );
+                self.impl_types.push(ty.clone());
 
+                let name = match self.ident {
+                    Some(ident) => snake_to_pascal_case(&ident.to_string()),
+                    None => format!("T{}", self.impl_types.len()),
+                };
+
+                let ident = Ident::new(&name, ty.span());
+
+                self.ident = None;
                 self.generics.params.push(GenericParam::Type(TypeParam {
                     attrs:       Vec::new(),
                     ident:       ident.clone(),
@@ -224,26 +231,38 @@ impl<'a> Fold for ImplFolder<'a> {
     }
 }
 
-fn get_arguments(sig: &Signature, impl_folder: &mut ImplFolder<'_>) -> syn::Result<Vec<Argument>> {
+fn get_arguments(
+    sig: &Signature,
+    impl_types: &mut Vec<TypeImplTrait>,
+    generics: &mut Generics,
+) -> syn::Result<Vec<Argument>> {
     sig.inputs
         .iter()
         .map(|argument| match argument {
-            FnArg::Typed(argument) => match argument.pat.as_ref() {
-                Pat::Ident(pat) => Ok(Argument {
-                    ident:      pat.ident.clone(),
-                    path:       Path::from(pat.ident.clone()),
-                    mutability: pat.mutability,
+            FnArg::Typed(pat_ty) => match pat_ty.pat.as_ref() {
+                Pat::Ident(pat) => {
+                    let mut impl_folder = ImplFolder {
+                        ident: Some(&pat.ident),
+                        impl_types,
+                        generics,
+                    };
 
-                    span: argument.span(),
+                    Ok(Argument {
+                        ident:      pat.ident.clone(),
+                        path:       Path::from(pat.ident.clone()),
+                        mutability: pat.mutability,
 
-                    arg_ty:   argument.ty.as_ref().clone(),
-                    field_ty: impl_folder.fold_type(argument.ty.as_ref().clone()),
+                        span: argument.span(),
 
-                    attrs: ArgumentAttrs::new(&argument.attrs)?,
-                }),
+                        arg_ty:   pat_ty.ty.as_ref().clone(),
+                        field_ty: impl_folder.fold_type(pat_ty.ty.as_ref().clone()),
+
+                        attrs: ArgumentAttrs::new(&pat_ty.attrs)?,
+                    })
+                }
 
                 _ => Err(syn::Error::new(
-                    argument.pat.span(),
+                    pat_ty.pat.span(),
                     "only identifier arguments are allowed in `builder` functions",
                 )),
             },
@@ -461,7 +480,7 @@ fn fn_type_generics(generics: &Generics, types: &[TypeImplTrait]) -> TokenStream
     quote!(<#(#arguments,)*>)
 }
 
-fn builder_name(name: &str) -> String {
+fn snake_to_pascal_case(name: &str) -> String {
     let mut output = String::new();
     let mut is_upper = true;
 

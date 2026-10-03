@@ -13,7 +13,7 @@ struct Data {}
 fn ui(_data: &Data) -> impl Effect<Data> + use<> {
     window(
         row(button(text("click me"), |_| {
-            tracing::info!("clicked");
+            info!("clicked");
         })
         .color(Color::GREEN)
         .padding(10.0)
