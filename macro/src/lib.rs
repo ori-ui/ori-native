@@ -14,6 +14,8 @@ pub fn main(
         #item
 
         const _: () = {
+            let _ = #ident;
+
             #[unsafe(no_mangle)]
             #[cfg(target_os = "android")]
             extern "C" fn Java_ori_OriActivity_main(
