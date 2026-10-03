@@ -1,8 +1,8 @@
 use ori::{Builder, BuilderMarker, views::using_or_default};
 
 use crate::{
-    Context, LayoutStyle, Length, Platform, SafeAreaInsets, Sides, StyleLayout, StylePadding,
-    WidgetView, views::Flex,
+    BoxedWidget, Context, LayoutStyle, Length, Platform, SafeAreaInsets, Sides, StyleLayout,
+    StylePadding, WidgetView, views::Flex,
 };
 
 /// [`View`](ori::View) that ensures contents isn't overlapped by system elements.
@@ -38,6 +38,8 @@ where
     P: Platform,
     V: WidgetView<P, T>,
 {
+    type Element = BoxedWidget<P>;
+
     fn build(self) -> impl WidgetView<P, T> {
         using_or_default(move |_, SafeAreaInsets(insets)| {
             let padding = Sides {
@@ -48,7 +50,7 @@ where
             };
 
             Flex::new(self.contents)
-                .layout(self.layout)
+                .set_layout(self.layout)
                 .padding(padding)
         })
     }

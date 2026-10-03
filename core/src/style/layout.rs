@@ -339,7 +339,7 @@ pub trait StyleLayout: Sized {
     fn get_layout_style_mut(&mut self) -> &mut LayoutStyle;
 
     /// Override the layout style.
-    fn layout(mut self, style: LayoutStyle) -> Self {
+    fn set_layout(mut self, style: LayoutStyle) -> Self {
         *self.get_layout_style_mut() = style;
         self
     }
@@ -496,6 +496,12 @@ pub trait StyleBorder: Sized {
     /// Get a mutable reference to the border style.
     fn get_border_style_mut(&mut self) -> &mut BorderStyle;
 
+    /// Override the border style.
+    fn set_border(mut self, style: BorderStyle) -> Self {
+        *self.get_border_style_mut() = style;
+        self
+    }
+
     /// Set the border width and color.
     fn border(self, width: impl Into<Sides<Length>>, color: Color) -> Self {
         self.border_width(width).border_color(color)
@@ -563,6 +569,12 @@ pub trait StylePadding: Sized {
     /// Get a mutable reference to the padding.
     fn get_padding_mut(&mut self) -> &mut Sides<Length>;
 
+    /// Override the padding style.
+    fn set_padding(mut self, padding: Sides<Length>) -> Self {
+        *self.get_padding_mut() = padding;
+        self
+    }
+
     /// Set the padding on all sides.
     fn padding(mut self, padding: impl Into<Sides<Length>>) -> Self {
         *self.get_padding_mut() = padding.into();
@@ -598,6 +610,12 @@ pub trait StylePadding: Sized {
 pub trait StyleFlexContainer: Sized {
     /// Get a mutable reference to the flex style.
     fn get_flex_style_mut(&mut self) -> &mut FlexStyle;
+
+    /// Override the flex style.
+    fn set_flex(mut self, style: FlexStyle) -> Self {
+        *self.get_flex_style_mut() = style;
+        self
+    }
 
     /// Set the flex direction.
     fn direction(mut self, direction: Direction) -> Self {

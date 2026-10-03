@@ -1,7 +1,16 @@
-#![warn(unused_crate_dependencies)]
+#![warn(unused_crate_dependencies, missing_docs)]
+
+//! Macros for `ori-native`.
 
 use quote::quote;
 
+mod builder;
+
+fn find_ori_native() -> syn::Path {
+    syn::parse_quote!(ori_native)
+}
+
+/// Mark function as the entry point for mobile applications.
 #[proc_macro_attribute]
 pub fn main(
     _attr: proc_macro::TokenStream,
@@ -28,4 +37,16 @@ pub fn main(
     };
 
     expanded.into()
+}
+
+/// Derive the builder pattern for a function.
+#[proc_macro_attribute]
+pub fn builder(
+    attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    match builder::builder(attr, item) {
+        Ok(tokens) => tokens,
+        Err(error) => error.to_compile_error().into(),
+    }
 }

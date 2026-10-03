@@ -24,6 +24,12 @@ pub trait StyleShadow: Sized {
     /// Get a mutable reference to the shadow.
     fn get_shadow_mut(&mut self) -> &mut Shadow;
 
+    /// Override the shadow style.
+    fn set_shadow(mut self, shadow: Shadow) -> Self {
+        *self.get_shadow_mut() = shadow;
+        self
+    }
+
     /// Set the shadow properties.
     fn shadow(self, dx: f32, dy: f32, radius: f32, color: Color) -> Self {
         self.shadow_offset(dx, dy)

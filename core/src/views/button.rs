@@ -7,8 +7,8 @@ use ori::{
 };
 
 use crate::{
-    BorderStyle, Color, Context, Corners, FlexStyle, LayoutStyle, Length, Platform, Sides,
-    StyleBorder, StyleCorners, StyleFlexContainer, StyleLayout, StylePadding, WidgetView,
+    BorderStyle, BoxedWidget, Color, Context, Corners, FlexStyle, LayoutStyle, Length, Platform,
+    Sides, StyleBorder, StyleCorners, StyleFlexContainer, StyleLayout, StylePadding, WidgetView,
     views::{Ease, Transition, pressable, row, transition},
 };
 
@@ -147,6 +147,8 @@ where
     F: FnMut(&mut T) -> A,
     A: Into<Action>,
 {
+    type Element = BoxedWidget<P>;
+
     fn build(self) -> impl WidgetView<P, T> {
         struct State<F> {
             key_pressed: bool,
@@ -188,7 +190,7 @@ where
                             trans.clone(),
                             move |_, (color, border_color)| {
                                 let mut row = row(without(maybe(contents.take())))
-                                    .layout(self.layout)
+                                    .set_layout(self.layout)
                                     .padding(self.padding)
                                     .corner(self.corners)
                                     .background(color)

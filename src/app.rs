@@ -28,6 +28,7 @@ impl App {
             panic!("`App::run` cannot be called from within an async runtime.");
         }
 
+        Self::init_log();
         self.native.run(data, ui)
     }
 

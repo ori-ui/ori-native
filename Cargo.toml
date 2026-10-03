@@ -27,14 +27,16 @@ ori-native-macro = { path = "macro" }
 ori-native-android = { path = "platform/android" }
 ori-native-gtk4    = { path = "platform/gtk4"    }
 
-ori = { git = "https://github.com/ori-ui/ori" }
-
 seahash = "4"
 
 tracing = "0.1"
 tracing-subscriber = "0.3"
 
 keyboard-types = "0.8"
+
+[workspace.dependencies.ori]
+git = "https://github.com/ori-ui/ori"
+features = ["tracing"]
 
 [workspace.dependencies.taffy]
 version = "0.14"

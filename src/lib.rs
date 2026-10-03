@@ -17,7 +17,7 @@ pub use view::{BoxedView, Effect, View, ViewSeq};
 pub use ori::*;
 pub use ori_native_core::*;
 
-pub use ori_native_macro::main;
+pub use ori_native_macro::{builder, main};
 
 #[cfg(platform = "gtk4")]
 pub use ori_native_gtk4 as platform;
@@ -31,8 +31,8 @@ pub type Platform = platform::Platform;
 /// The [`Context`](ori_native_core::Context) of the selected [`Platform`].
 pub type Context = ori_native_core::Context<Platform>;
 
-/// The [`Element`](ori::Element) of the selected [`Platform`].
-pub type Element = <Context as ori::Base>::Element;
+/// A boxed [`Widget`] of the selected platform.
+pub type BoxedWidget = ori_native_core::BoxedWidget<Platform>;
 
 /// The error type of the selected [`Platform`].
 pub type Error = platform::Error;
@@ -55,13 +55,13 @@ pub mod views {
 /// Commonly used imports.
 pub mod prelude {
     pub use crate::{
-        Action, Align, App, BoxedView, Builder, BuilderMarker, Button, Color, Context, Corners,
-        Direction, Effect, Element, Font, Fract, Justify, Key, LayoutStyle, Length, Message,
-        Modifiers, NamedKey, NativeAction, NavigationBar, Newline, Overflow, Position,
-        PressableEvent, Proxy, Quit, RequestFocus, SafeAreaInsets, Shadow, Side, Sides, Size,
-        Sizing, StatusBar, Stretch, StyleBorder, StyleCorners, StyleFlexContainer, StyleLayout,
-        StylePadding, StyleShadow, Submit, TextAlign, TextWrap, View, ViewId, ViewSeq, Weight,
-        views::*,
+        Action, Align, App, BorderStyle, BoxedView, Builder, BuilderMarker, Button, Color, Context,
+        Corners, Direction, Effect, Element, FlexStyle, Font, Fract, Justify, Key, LayoutStyle,
+        Length, Message, Modifiers, NamedKey, NativeAction, NavigationBar, Newline, Overflow,
+        Position, PressableEvent, Proxy, Quit, RequestFocus, SafeAreaInsets, Shadow, Side, Sides,
+        Size, Sizing, StatusBar, Stretch, StyleBorder, StyleCorners, StyleFlexContainer,
+        StyleLayout, StylePadding, StyleShadow, Submit, TextAlign, TextWrap, View, ViewId, ViewSeq,
+        Weight, builder, views::*,
     };
 
     #[allow(unused_imports)]

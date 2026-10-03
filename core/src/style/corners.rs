@@ -82,6 +82,12 @@ pub trait StyleCorners: Sized {
     /// Get a mutable reference to the corner style.
     fn get_corners_mut(&mut self) -> &mut Corners<f32>;
 
+    /// Override the corners style.
+    fn set_corners(mut self, corners: Corners<f32>) -> Self {
+        *self.get_corners_mut() = corners;
+        self
+    }
+
     /// Set the radius of all corners.
     fn corner(mut self, radii: impl Into<Corners<f32>>) -> Self {
         *self.get_corners_mut() = radii.into();
