@@ -2,9 +2,9 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::{ToTokens, quote, quote_spanned};
 use syn::{
     Attribute, Expr, FnArg, GenericArgument, GenericParam, Generics, ItemFn, Pat, Path,
-    PathArguments, PredicateType, ReturnType, Signature, TraitBound, Type, TypeImplTrait,
-    TypeParam, TypeParamBound, TypePath, WherePredicate, fold::Fold, punctuated::Punctuated,
-    spanned::Spanned, token::Mut,
+    PathArguments, PredicateType, ReturnType, Signature, TraitBound, Type, TypeGenerics,
+    TypeImplTrait, TypeParam, TypeParamBound, TypePath, WherePredicate, fold::Fold,
+    punctuated::Punctuated, spanned::Spanned, token::Mut,
 };
 
 use crate::find_ori_native;
@@ -37,11 +37,13 @@ pub fn builder(
         &mut generics,
     )?;
 
+    let fn_type_generics = fn_type_generics(&item.sig.generics, &impl_types);
+
     let pats = argument_pats(&arguments);
     let fields = argument_fields(&arguments);
     let inits = argument_inits(&arguments);
     let inputs = argument_inputs(&arguments);
-    let setters = argument_setters(&arguments);
+    let setters = argument_setters(&builder, &fn_type_generics, &arguments);
 
     let layout_impl = layout_impl(
         &ori_native,
@@ -86,7 +88,6 @@ pub fn builder(
     )?;
 
     let marker_generics = marker_generics(&generics);
-    let fn_type_generics = fn_type_generics(&item.sig.generics, &impl_types);
 
     let data = get_data(&item.sig.output).ok_or_else(|| {
         syn::Error::new(
@@ -161,6 +162,8 @@ struct Argument {
     ident:      Ident,
     path:       Path,
     mutability: Option<Mut>,
+
+    is_impl: bool,
 
     arg_ty:   Type,
     field_ty: Type,
@@ -252,15 +255,19 @@ fn get_arguments(
                         generics,
                     };
 
+                    let field_ty = impl_folder.fold_type(pat_ty.ty.as_ref().clone());
+
                     Ok(Argument {
-                        ident:      pat.ident.clone(),
-                        path:       Path::from(pat.ident.clone()),
+                        ident: pat.ident.clone(),
+                        path: Path::from(pat.ident.clone()),
                         mutability: pat.mutability,
+
+                        is_impl: impl_folder.ident.is_none(),
 
                         span: argument.span(),
 
-                        arg_ty:   pat_ty.ty.as_ref().clone(),
-                        field_ty: impl_folder.fold_type(pat_ty.ty.as_ref().clone()),
+                        arg_ty: pat_ty.ty.as_ref().clone(),
+                        field_ty,
 
                         attrs: ArgumentAttrs::new(&pat_ty.attrs)?,
                     })
@@ -323,7 +330,11 @@ fn argument_inits(arguments: &[Argument]) -> Vec<TokenStream> {
         .collect()
 }
 
-fn argument_setters(arguments: &[Argument]) -> Vec<TokenStream> {
+fn argument_setters(
+    builder: &Ident,
+    type_generics: &TokenStream,
+    arguments: &[Argument],
+) -> Vec<TokenStream> {
     arguments
         .iter()
         .filter(|argument| {
@@ -340,12 +351,42 @@ fn argument_setters(arguments: &[Argument]) -> Vec<TokenStream> {
             let ident = &argument.ident;
             let ty = &argument.arg_ty;
 
-            quote! {
-                #(#docs)*
-                #[automatically_derived]
-                pub fn #ident(mut self, #ident: impl ::std::convert::Into<#ty>) -> Self {
-                    self.#ident = ::std::convert::Into::into(#ident);
-                    self
+            if argument.is_impl {
+                let fields =
+                    arguments
+                        .iter()
+                        .filter(|a| a.ident != argument.ident)
+                        .map(|argument| {
+                            let ident = &argument.ident;
+
+                            quote!(#ident: self.#ident)
+                        });
+
+                quote! {
+                    #(#docs)*
+                    #[automatically_derived]
+                    pub fn #ident(
+                        mut self,
+                        #ident: #ty,
+                    ) -> #builder #type_generics {
+                        #builder {
+                            #(#fields,)*
+                            #ident: #ident,
+                            marker: ::std::marker::PhantomData,
+                        }
+                    }
+                }
+            } else {
+                quote! {
+                    #(#docs)*
+                    #[automatically_derived]
+                    pub fn #ident(
+                        mut self,
+                        #ident: impl ::std::convert::Into<#ty>,
+                    ) -> #builder #type_generics {
+                        self.#ident = ::std::convert::Into::into(#ident);
+                        self
+                    }
                 }
             }
         })
