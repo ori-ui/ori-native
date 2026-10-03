@@ -88,7 +88,12 @@ pub fn builder(
     let marker_generics = marker_generics(&generics);
     let fn_type_generics = fn_type_generics(&item.sig.generics, &impl_types);
 
-    let data = get_data(&item.sig.output).expect("invalid return type");
+    let data = get_data(&item.sig.output).ok_or_else(|| {
+        syn::Error::new(
+            Span::call_site(),
+            "invalid return type, must be either `impl View<...>` or `impl Effect<...>`",
+        )
+    })?;
 
     let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
 
