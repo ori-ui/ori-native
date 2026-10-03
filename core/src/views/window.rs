@@ -5,8 +5,8 @@ use ori::{Action, Message, Mut, Proxied, Proxy, Tracked, View, ViewId, ViewMarke
 
 use crate::{
     Allocation, AnimateRequest, AvailableSpace, Context, Input, InputHandler, LayoutNode,
-    LayoutRequest, LayoutStyle, Length, MatchKey, NavigationBar, Parent, Platform, Size, Sizing,
-    StatusBar, Widget, WidgetView, native::NativeWindow, widget::WidgetMut,
+    LayoutRequest, LayoutStyle, Length, MatchKey, NativeAction, NavigationBar, Parent, Platform,
+    Size, Sizing, StatusBar, Widget, WidgetView, native::NativeWindow, widget::WidgetMut,
 };
 
 /// [`View`] of a window.
@@ -86,6 +86,18 @@ impl<T, V> Window<T, V> {
         self.attributes.input.add_key_up(key, mods, on_key_up);
         self
     }
+
+    /// Set the callback for when the window is resized.
+    pub fn on_resize<A>(
+        mut self,
+        mut on_resize: impl FnMut(&mut T, f32, f32) -> A + 'static,
+    ) -> Self
+    where
+        A: Into<Action>,
+    {
+        self.attributes.on_resize = Box::new(move |data, w, h| on_resize(data, w, h).into());
+        self
+    }
 }
 
 #[derive(Debug)]
@@ -142,15 +154,13 @@ where
 }
 
 /// Common attributes of a [`Window`].
+#[allow(clippy::type_complexity)]
 pub struct WindowAttributes<T> {
     /// The title of the window.
     pub title: String,
 
     /// The sizing mode of the window.
     pub sizing: Sizing,
-
-    /// The input handlers of the window.
-    pub input: Input<T>,
 
     /// Whether the window is decorated.
     pub decorated: bool,
@@ -160,6 +170,15 @@ pub struct WindowAttributes<T> {
 
     /// The style of the navigation bar.
     pub navigation_bar: NavigationBar,
+
+    /// The input handlers of the window.
+    pub input: Input<T>,
+
+    /// The callback for when the window is resized.
+    pub on_resize: Box<dyn FnMut(&mut T, f32, f32) -> Action>,
+
+    /// The callback for when the window is closed.
+    pub on_close: Box<dyn FnMut(&mut T) -> Action>,
 }
 
 impl<T> Default for WindowAttributes<T> {
@@ -167,16 +186,20 @@ impl<T> Default for WindowAttributes<T> {
         Self {
             title:     String::new(),
             sizing:    Sizing::User,
-            input:     Default::default(),
             decorated: true,
 
             status_bar:     Default::default(),
             navigation_bar: Default::default(),
+
+            input:     Default::default(),
+            on_resize: Box::new(|_, _, _| Action::new()),
+            on_close:  Box::new(|_| Action::quit()),
         }
     }
 }
 
 /// Common state of a [`Window`].
+#[allow(clippy::type_complexity)]
 pub struct WindowState<P, T, V>
 where
     P: Platform,
@@ -197,8 +220,11 @@ where
 
     title:     String,
     sizing:    Sizing,
-    handler:   InputHandler<T>,
     decorated: bool,
+
+    handler:   InputHandler<T>,
+    on_resize: Box<dyn FnMut(&mut T, f32, f32) -> Action>,
+    on_close:  Box<dyn FnMut(&mut T) -> Action>,
 
     width:  f32,
     height: f32,
@@ -316,15 +342,22 @@ where
         Self {
             window,
             view_id,
+
             layout: node,
             allocation: None,
             content_allocation: None,
-            title: attributes.title,
-            sizing: attributes.sizing,
-            handler,
-            decorated: attributes.decorated,
+
             status_bar: attributes.status_bar,
             navigation_bar: attributes.navigation_bar,
+
+            title: attributes.title,
+            sizing: attributes.sizing,
+            decorated: attributes.decorated,
+
+            handler,
+            on_resize: attributes.on_resize,
+            on_close: attributes.on_close,
+
             width,
             height,
             animating: 0,
@@ -397,6 +430,9 @@ where
             self.navigation_bar = attributes.navigation_bar;
             (self.window).set_navigation_bar(&mut cx.platform, self.navigation_bar);
         }
+
+        self.on_resize = attributes.on_resize;
+        self.on_close = attributes.on_close;
     }
 
     /// Compute layout and potentially resize the window.
@@ -530,11 +566,7 @@ where
                     Action::new()
                 }
 
-                WindowMessage::CloseRequested => {
-                    cx.platform.quit();
-
-                    Action::new()
-                }
+                WindowMessage::CloseRequested => (self.on_close)(data),
 
                 WindowMessage::Resized => {
                     let (width, height) = self.window.get_size(&mut cx.platform);
@@ -543,7 +575,7 @@ where
                         self.layout(cx);
                     }
 
-                    Action::new()
+                    (self.on_resize)(data, self.width, self.height)
                 }
             };
         }

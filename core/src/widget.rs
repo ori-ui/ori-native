@@ -57,8 +57,8 @@ where
         Self { parent, widget }
     }
 
-    /// Get a scoped clone of `self`.
-    pub fn clone(&mut self) -> WidgetMut<'_, P, W> {
+    /// Reborrow `self`.
+    pub fn reborrow(&mut self) -> WidgetMut<'_, P, W> {
         WidgetMut {
             parent: &mut *self.parent,
             widget: &mut *self.widget,
@@ -123,8 +123,7 @@ where
 impl<P, T> Sub<Context<P>, T> for BoxedWidget<P>
 where
     P: Platform,
-    T: Widget<P>,
-    T: for<'a> Element<Mut<'a> = WidgetMut<'a, P, T>>,
+    T: Widget<P> + WidgetElement<P>,
 {
     fn replace(cx: &mut Context<P>, this: Self::Mut<'_>, sub: T) -> Self {
         let widget = sub.widget_ref();

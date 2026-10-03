@@ -4,8 +4,8 @@ use std::{
 };
 
 use gtk4::prelude::ApplicationExt;
-use ori::{Effect, Message, Proxied};
-use ori_native_core::{Context, PressableEvent, TextInputEvent};
+use ori::{Effect, Message};
+use ori_native_core::{Context, root};
 use tracing_subscriber::layer::SubscriberExt;
 
 use crate::Platform;
@@ -218,41 +218,24 @@ where
 
             Event::Rebuild => {
                 if let Some(ref mut state) = self.state {
-                    let view = (self.build)(self.data);
-
-                    view.rebuild((), state, &mut self.context, self.data);
-                }
-            }
-
-            Event::Message(mut message) => {
-                if let Some(ref mut state) = self.state {
-                    let mut action = V::message(
-                        (),
+                    root::rebuild(
+                        &mut self.build,
                         state,
                         &mut self.context,
                         self.data,
-                        &mut message,
                     );
+                }
+            }
 
-                    if let Some(target) = message.target()
-                        && !message.is::<PressableEvent>()
-                        && !message.is::<TextInputEvent>()
-                        && !message.is_taken()
-                    {
-                        tracing::warn!(
-                            target=?target,
-                            type=message.type_name(),
-                            "message sent but not received"
-                        );
-                    }
-
-                    if action.take_rebuild() {
-                        let view = (self.build)(self.data);
-                        view.rebuild((), state, &mut self.context, self.data);
-                    }
-
-                    action.rebuild = false;
-                    self.context.send_action(action);
+            Event::Message(message) => {
+                if let Some(ref mut state) = self.state {
+                    root::message(
+                        &mut self.build,
+                        state,
+                        &mut self.context,
+                        self.data,
+                        message,
+                    );
                 }
             }
         }

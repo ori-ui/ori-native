@@ -1,11 +1,8 @@
-use std::{
-    any::{self, Any, TypeId},
-    sync::Arc,
-};
+use std::{any::Any, sync::Arc};
 
 use ori::{Action, AnyView, Base, Message, Provider, Proxied, Proxy, Tracked, Tree};
 
-use crate::{AnimateRequest, BoxedWidget, LayoutNode, LayoutTree, Platform};
+use crate::{AnimateRequest, BoxedWidget, LayoutNode, LayoutTree, Platform, Resources};
 
 /// The context of the [`View`](ori::View) tree.
 pub struct Context<P>
@@ -18,16 +15,8 @@ where
     /// The [`LayoutTree`].
     pub layout: LayoutTree<P>,
 
-    resources: Vec<Resource>,
-
-    view_id_tree: Tree,
-}
-
-#[allow(dead_code)]
-struct Resource {
-    type_id:   TypeId,
-    type_name: &'static str,
-    value:     Box<dyn Any>,
+    resources: Resources,
+    id_tree:   Tree,
 }
 
 impl<P> Context<P>
@@ -41,8 +30,8 @@ where
         Self {
             platform,
             layout: LayoutTree::new(proxy),
-            resources: Vec::new(),
-            view_id_tree: Tree::new(),
+            resources: Resources::new(),
+            id_tree: Tree::new(),
         }
     }
 
@@ -78,7 +67,7 @@ where
     P: Platform,
 {
     fn tree(&mut self) -> &mut Tree {
-        &mut self.view_id_tree
+        &mut self.id_tree
     }
 }
 
@@ -97,56 +86,23 @@ where
     }
 }
 
-impl Resource {
-    fn is<T: Any>(&self) -> bool {
-        self.type_id == TypeId::of::<T>()
-    }
-
-    unsafe fn downcast_unchecked<T: Any>(self) -> Box<T> {
-        let ptr: *mut T = Box::into_raw(self.value).cast();
-        unsafe { Box::from_raw(ptr) }
-    }
-
-    unsafe fn downcast_ref_unchecked<T: Any>(&self) -> &T {
-        let ptr = self.value.as_ref() as *const _ as *const T;
-        unsafe { &*ptr }
-    }
-
-    unsafe fn downcast_mut_unchecked<T: Any>(&mut self) -> &mut T {
-        let ptr = self.value.as_mut() as *mut _ as *mut T;
-        unsafe { &mut *ptr }
-    }
-}
-
 impl<P> Provider for Context<P>
 where
     P: Platform,
 {
     fn push<T: Any>(&mut self, resource: Box<T>) {
-        self.resources.push(Resource {
-            type_id:   TypeId::of::<T>(),
-            type_name: any::type_name::<T>(),
-            value:     resource,
-        });
+        self.resources.push(resource);
     }
 
     fn pop<T: Any>(&mut self) -> Option<Box<T>> {
-        let i = self.resources.iter().rposition(|r| r.is::<T>())?;
-
-        let resource = self.resources.remove(i);
-        let resource = unsafe { resource.downcast_unchecked::<T>() };
-        Some(resource)
+        self.resources.pop()
     }
 
     fn get<T: Any>(&self) -> Option<&T> {
-        let resource = self.resources.iter().rev().find(|r| r.is::<T>())?;
-        let resource = unsafe { resource.downcast_ref_unchecked::<T>() };
-        Some(resource)
+        self.resources.get()
     }
 
     fn get_mut<T: Any>(&mut self) -> Option<&mut T> {
-        let resource = self.resources.iter_mut().rev().find(|r| r.is::<T>())?;
-        let resource = unsafe { resource.downcast_mut_unchecked::<T>() };
-        Some(resource)
+        self.resources.get_mut()
     }
 }

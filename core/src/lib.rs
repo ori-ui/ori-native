@@ -10,11 +10,15 @@ mod layout;
 mod lifecycle;
 mod message;
 mod platform;
+mod resources;
 mod safearea;
 mod style;
 mod teleport;
 mod text;
 mod widget;
+
+/// Common functions for [`Platform`] implementations.
+pub mod root;
 
 pub mod native;
 pub mod views;
@@ -27,8 +31,9 @@ pub use layout::{
     Allocation, AvailableSpace, CachedMeasurable, LayoutNode, LayoutTree, Measurable,
 };
 pub use lifecycle::{AnimateRequest, LayoutRequest};
-pub use message::RequestFocus;
+pub use message::{NativeAction, Quit, RequestFocus};
 pub use platform::{Platform, Unsupported};
+pub use resources::Resources;
 pub use safearea::SafeAreaInsets;
 pub use style::{
     Affine, Align, BorderStyle, Color, Corners, Direction, FlexStyle, Fract, Justify, LayoutStyle,

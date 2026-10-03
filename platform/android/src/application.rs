@@ -9,7 +9,7 @@ use std::{
 
 use jni::{objects::JObject, refs::Global, vm::JavaVM};
 use ori::{Action, Effect, Message, Provider, Proxied};
-use ori_native_core::{Context, PressableEvent, SafeAreaInsets, Sides, TextInputEvent};
+use ori_native_core::{Context, PressableEvent, SafeAreaInsets, Sides, TextInputEvent, root};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt};
 
 use crate::{Platform, log::MakeAndroidWriter, platform::WidgetId};
@@ -82,7 +82,7 @@ impl Application {
         {
             state.handle_event(event);
 
-            // we want to handle every task in the queue before updating the ui.
+            // we want to handle every event in the queue before updating the ui.
             while let Ok(event) = state.receiver.try_recv() {
                 state.handle_event(event);
             }
@@ -184,32 +184,25 @@ where
 
             Event::Rebuild => {
                 if let Some(ref mut state) = self.state {
-                    let view = (self.build)(self.data);
-
-                    view.rebuild((), state, &mut self.context, self.data);
-                }
-            }
-
-            Event::Message(mut message) => {
-                let t = std::time::Instant::now();
-
-                if let Some(ref mut state) = self.state {
-                    let action = V::message(
-                        (),
+                    root::rebuild(
+                        &mut self.build,
                         state,
                         &mut self.context,
                         self.data,
-                        &mut message,
                     );
-
-                    self.context.send_action(action);
                 }
+            }
 
-                tracing::trace!(
-                    type = message.type_name(),
-                    time = ?t.elapsed(),
-                    "message",
-                );
+            Event::Message(message) => {
+                if let Some(ref mut state) = self.state {
+                    root::message(
+                        &mut self.build,
+                        state,
+                        &mut self.context,
+                        self.data,
+                        message,
+                    );
+                }
             }
 
             Event::Frame(duration) => {
