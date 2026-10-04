@@ -14,6 +14,12 @@ pub enum Length {
     Fract(f32),
 }
 
+impl Default for Length {
+    fn default() -> Self {
+        Self::Length(0.0)
+    }
+}
+
 impl From<f32> for Length {
     fn from(x: f32) -> Self {
         Length::Length(x)

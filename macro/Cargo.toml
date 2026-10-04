@@ -14,4 +14,4 @@ quote = "1"
 
 [dependencies.syn]
 version = "3"
-features = ["full", "fold"]
+features = ["full", "visit-mut"]

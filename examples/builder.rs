@@ -12,12 +12,9 @@ struct Data {}
 
 fn ui(_data: &Data) -> impl Effect<Data> + use<> {
     window(
-        row(button(text("click me"), |_| {
-            info!("clicked");
-        })
-        .color(Color::GREEN)
-        .padding(10.0)
-        .corner(6.0))
+        row(my_button(text("hello"))
+            .on_click(|_| info!("clicked"))
+            .corner(8.0))
         .background(Color::WHITE)
         .justify_content(Justify::Center)
         .align_items(Align::Center)
@@ -27,20 +24,34 @@ fn ui(_data: &Data) -> impl Effect<Data> + use<> {
 
 /// A button.
 #[builder]
-pub fn button<T, A>(
+pub fn my_button<T>(
+    /// Contents of the button.
     contents: impl View<T>,
-    mut on_click: impl FnMut(&mut T) -> A + 'static,
-    #[default = Color::RED] color: Color,
+
+    /// Callback for when the button is clicked.
+    #[default = |_| Action::new()]
+    mut on_click: impl (FnMut(&mut T) -> impl Into<Action>) + 'static,
+
+    /// The color of the button.
+    #[default = Color::RED]
+    color: Color,
+
+    #[default = Sides::from(12.0)]
+    #[padding]
+    padding: Sides<Length>,
+
+    #[default = BorderStyle {
+        color: Color::TRANSPARENT,
+        width: Sides::from(2.0),
+    }]
+    #[border]
+    border: BorderStyle,
+
     #[layout] layout: LayoutStyle,
-    #[padding] padding: Sides<Length>,
     #[corners] corners: Corners<f32>,
     #[shadow] shadow: Shadow,
-    #[border] border: BorderStyle,
     #[flex] flex: FlexStyle,
-) -> impl View<T> + use<>
-where
-    A: Into<Action>,
-{
+) -> impl View<T> {
     let mut contents = Some(contents);
 
     pressable(move |_, state| {
@@ -52,14 +63,21 @@ where
             color
         };
 
+        let border_color = if state.focused {
+            Color::BLUE
+        } else {
+            border.color
+        };
+
         row(maybe(contents.take()))
             .background(color)
+            .border(border.width, border_color)
             .set_layout(layout)
             .set_padding(padding)
             .set_corners(corners)
             .set_shadow(shadow)
-            .set_border(border)
             .set_flex(flex)
     })
+    .focusable(true)
     .on_press(move |data, _| on_click(data))
 }
