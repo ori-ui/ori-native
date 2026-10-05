@@ -139,6 +139,12 @@ impl<V, F> StyleCorners for Button<V, F> {
     }
 }
 
+impl<V, F> StyleBorder for Button<V, F> {
+    fn get_border_style_mut(&mut self) -> &mut BorderStyle {
+        &mut self.border
+    }
+}
+
 impl<V, F> BuilderMarker for Button<V, F> {}
 impl<P, T, V, F, A> Builder<Context<P>, T> for Button<V, F>
 where
