@@ -399,6 +399,7 @@ impl<P> LayoutTree<P> {
         layout.flex_shrink = style.flex_shrink;
         layout.flex_grow = style.flex_grow;
         layout.flex_basis = Self::into_dimension(style.flex_basis);
+        layout.aspect_ratio = style.aspect_ratio;
 
         layout.margin = taffy::Rect {
             top:    Self::into_length_auto(style.margin.top),

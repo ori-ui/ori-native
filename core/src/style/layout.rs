@@ -266,21 +266,25 @@ pub struct LayoutStyle {
 
     /// The maximum size of the view.
     pub max_size: Size<Option<Length>>,
+
+    /// The preferred aspect ratio of the view.
+    pub aspect_ratio: Option<f32>,
 }
 
 impl Default for LayoutStyle {
     fn default() -> Self {
         Self {
-            position:    Position::Relative,
-            align_self:  None,
-            flex_shrink: 0.0,
-            flex_grow:   0.0,
-            flex_basis:  None,
-            margin:      Sides::all(Some(Length::Length(0.0))),
-            inset:       Sides::all(None),
-            size:        Size::all(None),
-            min_size:    Size::all(None),
-            max_size:    Size::all(None),
+            position:     Position::Relative,
+            align_self:   None,
+            flex_shrink:  0.0,
+            flex_grow:    0.0,
+            flex_basis:   None,
+            margin:       Sides::all(Some(Length::Length(0.0))),
+            inset:        Sides::all(None),
+            size:         Size::all(None),
+            min_size:     Size::all(None),
+            max_size:     Size::all(None),
+            aspect_ratio: None,
         }
     }
 }
@@ -440,6 +444,12 @@ pub trait StyleLayout: Sized {
     /// Set the maximum `height`.
     fn max_height(mut self, max_height: impl Into<Length>) -> Self {
         self.get_layout_style_mut().max_size.height = Some(max_height.into());
+        self
+    }
+
+    /// Set the preferred aspect ratio.
+    fn aspect_ratio(mut self, aspect_ratio: impl Into<Option<f32>>) -> Self {
+        self.get_layout_style_mut().aspect_ratio = aspect_ratio.into();
         self
     }
 
