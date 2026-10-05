@@ -162,6 +162,10 @@ impl<P> Elements<Context<P>, BoxedWidget<P>> for GroupElements<'_, P>
 where
     P: Platform,
 {
+    fn index(&self) -> usize {
+        self.parent.index
+    }
+
     fn next(&mut self, _cx: &mut Context<P>) -> Option<Mut<'_, BoxedWidget<P>>> {
         let child = self.children.get_mut(self.parent.index)?;
         self.parent.index += 1;
