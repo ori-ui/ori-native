@@ -21,6 +21,7 @@ pub struct Spring<F> {
 
     target: f32,
 
+    threshold: f32,
     stiffness: f32,
     damping:   f32,
     mass:      f32,
@@ -32,10 +33,17 @@ impl<F> Spring<F> {
         Self {
             build,
             target,
+            threshold: 0.1,
             stiffness: 170.0,
             damping: 26.0,
             mass: 1.0,
         }
+    }
+
+    /// Set the threshold for when animation should stop.
+    pub fn threshold(mut self, threshold: f32) -> Self {
+        self.threshold = threshold;
+        self
     }
 
     /// Set the stiffness of the spring.
@@ -92,6 +100,7 @@ pub struct SpringState<F> {
     position: f64,
     velocity: f64,
 
+    threshold: f64,
     stiffness: f64,
     damping:   f64,
     mass:      f64,
@@ -112,6 +121,7 @@ where
             position: self.target as f64,
             velocity: 0.0,
 
+            threshold: self.threshold as f64,
             stiffness: self.stiffness as f64,
             damping:   self.damping as f64,
             mass:      self.mass as f64,
@@ -123,11 +133,12 @@ where
     fn rebuild(self, state: &mut Self::State, _data: &mut T) -> bool {
         state.build = self.build;
         state.target = self.target as f64;
+        state.threshold = self.threshold as f64;
         state.stiffness = self.stiffness as f64;
         state.damping = self.damping as f64;
         state.mass = self.mass as f64;
 
-        (state.position - state.target).abs() > 0.01
+        state.position != state.target
     }
 
     fn animate(state: &mut Self::State, _data: &mut T, duration: Duration) -> bool {
@@ -142,7 +153,16 @@ where
             state.position += state.velocity * delta;
         }
 
-        (state.position - state.target).abs() > 0.01
+        if (state.position - state.target).abs() <= state.threshold
+            && state.velocity <= state.threshold
+        {
+            state.velocity = 0.0;
+            state.position = state.target;
+
+            false
+        } else {
+            true
+        }
     }
 
     fn view(state: &mut Self::State, data: &T) -> Self::View {
