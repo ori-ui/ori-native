@@ -5,12 +5,7 @@ use ori::{Action, Message, Mut, Proxied, Proxy, Tracked, View, ViewId, ViewMarke
 use crate::{Context, Platform, Widget, WidgetView, widget::WidgetMut, widgets::AnimateWidget};
 
 /// [`View`] that animates its contents.
-pub fn animate<P, T, A>(animation: A) -> impl WidgetView<P, T>
-where
-    P: Platform,
-    A: Animation<T>,
-    A::View: WidgetView<P, T>,
-{
+pub fn animate<T, A>(animation: A) -> Animate<T, A> {
     Animate::new(animation)
 }
 
@@ -37,14 +32,38 @@ pub trait Animation<T> {
 }
 
 /// [`View`] that animates its contents.
-pub struct Animate<A> {
+pub struct Animate<T, A> {
     animation: A,
+    on_start:  Box<dyn FnMut(&mut T) -> Action>,
+    on_end:    Box<dyn FnMut(&mut T) -> Action>,
 }
 
-impl<A> Animate<A> {
+impl<T, A> Animate<T, A> {
     /// Create new [`Animate`].
     pub fn new(animation: A) -> Self {
-        Self { animation }
+        Self {
+            animation,
+            on_start: Box::new(|_| Action::new()),
+            on_end: Box::new(|_| Action::new()),
+        }
+    }
+
+    /// Set the callback for when the animation starts.
+    pub fn on_start<U>(mut self, mut on_start: impl FnMut(&mut T) -> U + 'static) -> Self
+    where
+        U: Into<Action>,
+    {
+        self.on_start = Box::new(move |data| on_start(data).into());
+        self
+    }
+
+    /// Set the callback for when the animation ends.
+    pub fn on_end<U>(mut self, mut on_end: impl FnMut(&mut T) -> U + 'static) -> Self
+    where
+        U: Into<Action>,
+    {
+        self.on_end = Box::new(move |data| on_end(data).into());
+        self
     }
 }
 
@@ -53,8 +72,8 @@ struct AnimateMessage(Duration);
 type Element<A, P, T> = <<A as Animation<T>>::View as View<Context<P>, T>>::Element;
 type State<A, P, T> = <<A as Animation<T>>::View as View<Context<P>, T>>::State;
 
-impl<A> ViewMarker for Animate<A> {}
-impl<P, T, A> View<Context<P>, T> for Animate<A>
+impl<T, A> ViewMarker for Animate<T, A> {}
+impl<P, T, A> View<Context<P>, T> for Animate<T, A>
 where
     P: Platform,
     A: Animation<T>,
@@ -95,6 +114,8 @@ where
             anim,
             state,
             is_animating,
+            on_start: self.on_start,
+            on_end: self.on_end,
         };
 
         (widget, state)
@@ -107,6 +128,8 @@ where
         cx: &mut Context<P>,
         data: &mut T,
     ) {
+        state.on_end = self.on_end;
+
         let should_animate = self.animation.rebuild(&mut state.anim, data);
 
         let widget = WidgetMut::new(
@@ -121,8 +144,19 @@ where
             let layout = element.layout_node();
 
             match should_animate {
-                true => cx.request_start_animating(layout),
-                false => cx.request_stop_animating(layout),
+                true => {
+                    cx.request_start_animating(layout);
+
+                    let action = (state.on_start)(data);
+                    cx.send_action(action);
+                }
+
+                false => {
+                    cx.request_stop_animating(layout);
+
+                    let action = (state.on_end)(data);
+                    cx.send_action(action);
+                }
             }
 
             state.is_animating = should_animate;
@@ -149,18 +183,27 @@ where
 
             view.rebuild(widget, &mut state.state, cx, data);
 
+            let mut action = Action::new();
+
             if state.is_animating != should_animate {
                 let layout = element.layout_node();
 
                 match should_animate {
-                    true => cx.request_start_animating(layout),
-                    false => cx.request_stop_animating(layout),
+                    true => {
+                        cx.request_start_animating(layout);
+                        action = (state.on_start)(data);
+                    }
+
+                    false => {
+                        cx.request_stop_animating(layout);
+                        action = (state.on_end)(data);
+                    }
                 }
 
                 state.is_animating = should_animate;
             }
 
-            return Action::new();
+            return action;
         }
 
         let widget = WidgetMut::new(
@@ -201,4 +244,7 @@ where
     state:   State<A, P, T>,
 
     is_animating: bool,
+
+    on_start: Box<dyn FnMut(&mut T) -> Action>,
+    on_end:   Box<dyn FnMut(&mut T) -> Action>,
 }

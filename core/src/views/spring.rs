@@ -80,7 +80,7 @@ where
 {
     type Element = BoxedWidget<P>;
 
-    fn build(self) -> Animate<Self> {
+    fn build(self) -> impl WidgetView<P, T> {
         Animate::new(self)
     }
 }
