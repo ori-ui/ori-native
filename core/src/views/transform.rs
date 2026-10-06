@@ -54,7 +54,8 @@ where
 
     fn build(self, cx: &mut Context<P>, data: &mut T) -> (Self::Element, Self::State) {
         let (contents, state) = self.contents.build(cx, data);
-        let widget = TransformWidget::new(cx, contents);
+        let mut widget = TransformWidget::new(cx, contents);
+        widget.set_transform(cx, self.affine);
 
         let state = TransformState {
             state,
