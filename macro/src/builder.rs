@@ -215,11 +215,12 @@ fn marker<'a>(params: impl IntoIterator<Item = &'a GenericParam>) -> Type {
 }
 
 struct Argument {
-    attrs:      Attributes,
-    mutability: Option<Mut>,
-    ident:      Ident,
-    ty:         Type,
-    generic:    Type,
+    attrs:         Attributes,
+    mutability:    Option<Mut>,
+    ident:         Ident,
+    ty:            Type,
+    generic:       Type,
+    is_impl_trait: bool,
 }
 
 struct ImplVisitor<'a> {
@@ -311,6 +312,7 @@ impl Argument {
                         ident: pat.ident.clone(),
                         ty: arg.ty.as_ref().clone(),
                         generic,
+                        is_impl_trait,
                     })
                 }
 
@@ -328,6 +330,24 @@ impl Argument {
 
     fn has_setter(&self) -> bool {
         self.attrs.default.is_some() && self.attrs.style.is_none()
+    }
+
+    fn is_into(&self) -> bool {
+        !self.is_impl_trait
+            && self.ty != parse_quote!(f32)
+            && self.ty != parse_quote!(f64)
+            && self.ty != parse_quote!(i8)
+            && self.ty != parse_quote!(i16)
+            && self.ty != parse_quote!(i32)
+            && self.ty != parse_quote!(i64)
+            && self.ty != parse_quote!(isize)
+            && self.ty != parse_quote!(u8)
+            && self.ty != parse_quote!(u16)
+            && self.ty != parse_quote!(u32)
+            && self.ty != parse_quote!(u64)
+            && self.ty != parse_quote!(usize)
+            && self.ty != parse_quote!(bool)
+            && self.ty != parse_quote!(&'static str)
     }
 
     fn field(&self) -> TokenStream {
@@ -370,6 +390,16 @@ impl Argument {
         let docs = &self.attrs.docs;
         let ident = &self.ident;
 
+        if self.is_into() {
+            let ty = &self.ty;
+
+            return quote! {
+                #[automatically_derived]
+                #(#docs)*
+                fn #ident(self, #ident: impl ::std::convert::Into<#ty>) -> #builder;
+            };
+        }
+
         let mut generics = Generics::default();
         let mut visitor = ImplVisitor::new("T", &mut generics);
         let input = self.input(&mut visitor);
@@ -392,10 +422,6 @@ impl Argument {
     ) -> TokenStream {
         let ident = &self.ident;
 
-        let mut generics = Generics::default();
-        let mut visitor = ImplVisitor::new("U", &mut generics);
-        let input = self.input(&mut visitor);
-
         let idents = arguments
             .iter()
             .filter(|argument| argument.ident != self.ident)
@@ -403,6 +429,25 @@ impl Argument {
                 let ident = &argument.ident;
                 quote!(#ident: self.#ident)
             });
+
+        if self.is_into() {
+            let ty = &self.ty;
+
+            return quote! {
+                #[automatically_derived]
+                fn #ident(self, #ident: impl ::std::convert::Into<#ty>) -> #builder {
+                    #builder_impl {
+                        #ident: ::std::convert::Into::into(#ident),
+                        #(#idents,)*
+                        marker: ::std::marker::PhantomData,
+                    }
+                }
+            };
+        }
+
+        let mut generics = Generics::default();
+        let mut visitor = ImplVisitor::new("U", &mut generics);
+        let input = self.input(&mut visitor);
 
         let (impl_generics, _, where_clause) = generics.split_for_impl();
 
