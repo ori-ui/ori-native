@@ -89,7 +89,7 @@ impl NativeImage<Platform> for Image {
                     color.a.into(),
                 ],
             )?
-            .f()
+            .v()
         });
     }
 }
