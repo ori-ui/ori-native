@@ -59,6 +59,10 @@ impl NativeWindow<Platform> for Window {
         )
     }
 
+    fn get_scale(&self, _platform: &mut Platform) -> f32 {
+        1.0
+    }
+
     fn get_preferred_size(&self, _platform: &mut Platform) -> (Option<f32>, Option<f32>) {
         #[allow(unused_mut)]
         let mut min_width = None;

@@ -46,26 +46,40 @@ impl NativeWindow<Platform> for Window {
                 env.call_method(
                     activity,
                     jni_str!("windowGetWidth"),
-                    jni_sig!(() -> int),
+                    jni_sig!(() -> float),
                     &[],
                 )?
-                .i()
+                .f()
             })
-            .unwrap_or(0);
+            .unwrap_or(0.0);
 
         let height = platform
             .jni(|env, activity| {
                 env.call_method(
                     activity,
                     jni_str!("windowGetHeight"),
-                    jni_sig!(() -> int),
+                    jni_sig!(() -> float),
                     &[],
                 )?
-                .i()
+                .f()
             })
-            .unwrap_or(0);
+            .unwrap_or(0.0);
 
-        (width as f32, height as f32)
+        (width, height)
+    }
+
+    fn get_scale(&self, platform: &mut Platform) -> f32 {
+        platform
+            .jni(|env, activity| {
+                env.call_method(
+                    activity,
+                    jni_str!("windowGetScale"),
+                    jni_sig!(() -> float),
+                    &[],
+                )?
+                .f()
+            })
+            .unwrap_or(1.0)
     }
 
     fn get_preferred_size(&self, platform: &mut Platform) -> (Option<f32>, Option<f32>) {

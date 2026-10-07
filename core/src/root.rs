@@ -1,6 +1,8 @@
 use ori::{Effect, Message, Proxied};
 
-use crate::{Context, Platform, PressableEvent, Quit, TextInputEvent};
+use crate::{
+    Context, Platform, PressableEvent, Quit, TextInputEvent, views::animate::AnimateMessage,
+};
 
 /// Rebuild the view tree.
 pub fn rebuild<P, T, V, B>(build: &mut B, state: &mut V::State, cx: &mut Context<P>, data: &mut T)
@@ -35,6 +37,7 @@ pub fn message<P, T, V, B>(
     if let Some(target) = message.target()
         && !message.is::<PressableEvent>()
         && !message.is::<TextInputEvent>()
+        && !message.is::<AnimateMessage>()
         && !message.is_taken()
     {
         tracing::warn!(

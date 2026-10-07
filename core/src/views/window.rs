@@ -438,6 +438,7 @@ where
     /// Compute layout and potentially resize the window.
     pub fn layout(&mut self, cx: &mut Context<P>) {
         let (width, height) = self.window.get_size(&mut cx.platform);
+        let scale = self.window.get_scale(&mut cx.platform);
 
         self.width = width;
         self.height = height;
@@ -448,7 +449,12 @@ where
                 height: AvailableSpace::Definite(0.0),
             };
 
-            (cx.layout).compute_layout(&mut cx.platform, self.layout, size);
+            cx.layout.compute_layout(
+                &mut cx.platform,
+                self.layout,
+                size,
+                scale,
+            );
 
             if let Some(layout) = cx.layout.get_allocation(self.layout) {
                 self.window.set_min_size(
@@ -481,7 +487,12 @@ where
             }
         };
 
-        (cx.layout).compute_layout(&mut cx.platform, self.layout, size);
+        cx.layout.compute_layout(
+            &mut cx.platform,
+            self.layout,
+            size,
+            scale,
+        );
 
         if let Some(allocation) = cx.layout.get_allocation(self.layout)
             && self.allocation != Some(allocation)

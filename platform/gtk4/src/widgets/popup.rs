@@ -29,6 +29,10 @@ impl NativePopup<Platform> for Popup {
         self.set_anchor(Some(&anchor));
     }
 
+    fn get_scale(&mut self, _platform: &mut Platform) -> f32 {
+        1.0
+    }
+
     fn open(&mut self, _platform: &mut Platform, contents: gtk4::Widget) {
         self.set_contents(Some(&contents));
         self.imp().popover.popup();

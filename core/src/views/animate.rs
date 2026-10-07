@@ -67,7 +67,7 @@ impl<T, A> Animate<T, A> {
     }
 }
 
-struct AnimateMessage(Duration);
+pub struct AnimateMessage(Duration);
 
 type Element<A, P, T> = <<A as Animation<T>>::View as View<Context<P>, T>>::Element;
 type State<A, P, T> = <<A as Animation<T>>::View as View<Context<P>, T>>::State;

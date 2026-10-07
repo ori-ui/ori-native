@@ -17,6 +17,9 @@ where
     /// Replace the anchor widget.
     fn replace_anchor(&mut self, platform: &mut P, anchor: P::WidgetRef);
 
+    /// Get the scale factor of the popup surface.
+    fn get_scale(&mut self, platform: &mut P) -> f32;
+
     /// Open the popup with given `contents`.
     fn open(&mut self, platform: &mut P, contents: P::WidgetRef);
 
@@ -56,6 +59,10 @@ where
     }
 
     fn replace_anchor(&mut self, _platform: &mut P, _anchor: P::WidgetRef) {
+        unreachable!()
+    }
+
+    fn get_scale(&mut self, _platform: &mut P) -> f32 {
         unreachable!()
     }
 

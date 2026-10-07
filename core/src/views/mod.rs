@@ -1,22 +1,22 @@
 //! Builtin views.
 
-mod animate;
-mod button;
-mod flex;
-mod image;
-mod layout;
-mod list;
-mod measure;
-mod popup;
-mod pressable;
-mod safearea;
-mod scroll;
-mod spring;
-mod text;
-mod textinput;
-mod transform;
-mod transition;
-mod window;
+pub(crate) mod animate;
+pub(crate) mod button;
+pub(crate) mod flex;
+pub(crate) mod image;
+pub(crate) mod layout;
+pub(crate) mod list;
+pub(crate) mod measure;
+pub(crate) mod popup;
+pub(crate) mod pressable;
+pub(crate) mod safearea;
+pub(crate) mod scroll;
+pub(crate) mod spring;
+pub(crate) mod text;
+pub(crate) mod textinput;
+pub(crate) mod transform;
+pub(crate) mod transition;
+pub(crate) mod window;
 
 pub use animate::{Animate, Animation, animate};
 pub use button::{Button, button};

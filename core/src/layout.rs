@@ -8,7 +8,7 @@ use ori::{Message, Proxy, ViewId};
 
 use crate::{
     Align, BorderStyle, Direction, FlexStyle, Justify, LayoutRequest, LayoutStyle, Length,
-    Overflow, Position, Sides, Size,
+    Overflow, Platform, Position, Sides, Size,
 };
 
 /// A leaf in the layout tree.
@@ -132,17 +132,25 @@ pub struct Allocation {
 /// Id of a node in the [`LayoutTree`].
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct LayoutNode {
-    id: taffy::NodeId,
-}
+pub struct LayoutNode(u64);
 
 /// The layout tree of an application.
 pub struct LayoutTree<P> {
     proxy:     Arc<dyn Proxy>,
-    tree:      taffy::TaffyTree<Box<dyn Measurable<P>>>,
-    nodes:     HashSet<LayoutNode>,
-    roots:     HashMap<LayoutNode, ViewId>,
+    next:      u64,
+    nodes:     HashMap<u64, Node<P>>,
+    roots:     HashMap<u64, ViewId>,
     requested: HashSet<ViewId>,
+}
+
+struct Node<P> {
+    measurable: Option<Box<dyn Measurable<P>>>,
+    style:      taffy::Style,
+    cache:      taffy::Cache,
+    unrounded:  taffy::Layout,
+    rounded:    taffy::Layout,
+    parent:     Option<u64>,
+    children:   Vec<u64>,
 }
 
 impl<P> LayoutTree<P> {
@@ -150,8 +158,8 @@ impl<P> LayoutTree<P> {
     pub fn new(proxy: Arc<dyn Proxy>) -> Self {
         Self {
             proxy,
-            tree: taffy::TaffyTree::new(),
-            nodes: HashSet::new(),
+            next: 0,
+            nodes: HashMap::new(),
             roots: HashMap::new(),
             requested: HashSet::new(),
         }
@@ -159,12 +167,12 @@ impl<P> LayoutTree<P> {
 
     /// Insert a `root`.
     pub fn insert_root(&mut self, node: LayoutNode, view: ViewId) {
-        self.roots.insert(node, view);
+        self.roots.insert(node.0, view);
     }
 
     /// Remove a `root`.
     pub fn remove_root(&mut self, node: LayoutNode) {
-        self.roots.remove(&node);
+        self.roots.remove(&node.0);
     }
 
     /// Request a layout.
@@ -177,29 +185,36 @@ impl<P> LayoutTree<P> {
                 root,
             ));
         }
+
+        fn mark_dirty<P>(tree: &mut LayoutTree<P>, node: u64) {
+            if let Some(node) = tree.nodes.get_mut(&node)
+                && let taffy::ClearState::Cleared = node.cache.clear()
+                && let Some(parent) = node.parent
+            {
+                mark_dirty(tree, parent);
+            }
+        }
+
+        mark_dirty(self, node.0);
     }
 
     /// Get the `root` node of the tree containing `node`.
     pub fn get_root(&self, node: LayoutNode) -> Option<ViewId> {
-        let mut current = node.id;
+        let mut current = node.0;
 
-        while let Some(parent) = self.tree.parent(current) {
+        while let Some(node) = self.nodes.get(&current)
+            && let Some(parent) = node.parent
+        {
             current = parent;
         }
 
-        let node = LayoutNode { id: current };
-        self.roots.get(&node).copied()
+        self.roots.get(&current).copied()
     }
 
     /// Get the computed layout of a layout node.
     pub fn get_allocation(&self, node: LayoutNode) -> Option<Allocation> {
-        // NOTE: this is here because results returned by taffy mean nothing,
-        //       and `layout` will panic if `node` has been removed.
-        if !self.nodes.contains(&node) {
-            return None;
-        }
-
-        let layout = self.tree.layout(node.id).ok()?;
+        let node = self.nodes.get(&node.0)?;
+        let layout = &node.rounded;
 
         Some(Allocation {
             x: layout.location.x,
@@ -239,73 +254,58 @@ impl<P> LayoutTree<P> {
         platform: &mut P,
         node: LayoutNode,
         space: Size<AvailableSpace>,
+        scale: f32,
     ) where
-        P: 'static,
+        P: Platform,
     {
-        if let Some(root) = self.roots.get(&node) {
+        if let Some(root) = self.roots.get(&node.0) {
             self.requested.remove(root);
         }
 
-        let _ = self.tree.compute_layout_with_measure(
-            node.id,
-            taffy::Size {
-                width:  Self::into_available_space(space.width),
-                height: Self::into_available_space(space.height),
-            },
-            |input, _node, context, style| {
-                let mut baseline = None;
-                let mut output = taffy::compute_leaf_layout(
-                    input,
-                    style,
-                    |_, _| 0.0,
-                    |known_size, available_space| match context {
-                        Some(leaf) => {
-                            let (size, measured_baseline) = leaf.measure(
-                                platform,
-                                Size {
-                                    width:  known_size.width,
-                                    height: known_size.height,
-                                },
-                                Size {
-                                    width:  Self::from_available_space(available_space.width),
-                                    height: Self::from_available_space(available_space.height),
-                                },
-                            );
+        let available_space = taffy::Size {
+            width:  Self::into_available_space(space.width),
+            height: Self::into_available_space(space.height),
+        };
 
-                            baseline = measured_baseline;
+        let mut view = LayoutView {
+            scale,
+            scale_inverse: 1.0 / scale,
+            layout: self,
+            platform,
+        };
 
-                            taffy::Size {
-                                width:  size.width,
-                                height: size.height,
-                            }
-                        }
-
-                        None => taffy::Size::ZERO,
-                    },
-                );
-
-                output.baselines.first = baseline;
-                output
-            },
+        taffy::compute_root_layout(
+            &mut view,
+            taffy::NodeId::new(node.0),
+            available_space,
         );
+
+        taffy::round_layout(&mut view, taffy::NodeId::new(node.0));
     }
 
     /// Create a new layout node.
     pub fn add_node(&mut self, children: &[LayoutNode]) -> LayoutNode {
-        let id = self
-            .tree
-            .new_with_children(taffy::Style::DEFAULT, &[])
-            .expect("should never fail");
+        let node = self.next;
+        self.next += 1;
 
-        for child in children {
-            let _ = self.tree.add_child(id, child.id);
+        self.nodes.insert(
+            node,
+            Node {
+                measurable: None,
+                style:      Default::default(),
+                cache:      Default::default(),
+                unrounded:  Default::default(),
+                rounded:    Default::default(),
+                parent:     None,
+                children:   Vec::new(),
+            },
+        );
+
+        for (i, child) in children.iter().copied().enumerate() {
+            self.insert_child(LayoutNode(node), i, child);
         }
 
-        let node = LayoutNode { id };
-
-        self.nodes.insert(node);
-
-        node
+        LayoutNode(node)
     }
 
     /// Create a new layout leaf.
@@ -313,134 +313,147 @@ impl<P> LayoutTree<P> {
     where
         T: Measurable<P> + 'static,
     {
-        let id = (self.tree)
-            .new_leaf_with_context(
-                taffy::Style::DEFAULT,
-                Box::new(measurable),
-            )
-            .expect("should never fail");
+        let node = self.next;
+        self.next += 1;
 
-        let node = LayoutNode { id };
+        self.nodes.insert(
+            node,
+            Node {
+                measurable: Some(Box::new(measurable)),
+                style:      Default::default(),
+                cache:      Default::default(),
+                unrounded:  Default::default(),
+                rounded:    Default::default(),
+                parent:     None,
+                children:   Vec::new(),
+            },
+        );
 
-        self.nodes.insert(node);
-
-        node
+        LayoutNode(node)
     }
 
     /// Insert a child at `index` in a layout node.
     pub fn insert_child(&mut self, parent: LayoutNode, index: usize, child: LayoutNode) {
         self.request_layout(parent);
-        let _ = self.tree.insert_child_at_index(parent.id, index, child.id);
+
+        if let Some(parent) = self.nodes.get_mut(&parent.0) {
+            parent.children.insert(index, child.0);
+        }
+
+        if let Some(child) = self.nodes.get_mut(&child.0) {
+            child.parent = Some(parent.0);
+        }
     }
 
     /// Replace the child at `index` in a layout node.
     pub fn replace_child(&mut self, parent: LayoutNode, index: usize, child: LayoutNode) {
         self.request_layout(parent);
-        let _ = self.tree.replace_child_at_index(parent.id, index, child.id);
+
+        if let Some(parent) = self.nodes.get_mut(&parent.0) {
+            let prev = parent.children[index];
+            parent.children[index] = child.0;
+
+            if let Some(prev) = self.nodes.get_mut(&prev) {
+                prev.parent = None;
+            }
+        }
+
+        if let Some(child) = self.nodes.get_mut(&child.0) {
+            child.parent = Some(parent.0);
+        }
     }
 
     /// Replace `node` with `other`.
     pub fn replace_node(&mut self, node: LayoutNode, other: LayoutNode) {
-        if let Some(parent) = self.tree.parent(node.id) {
-            let children = self
-                .tree
-                .children(parent)
-                .expect("`parent` exists so its children should too");
+        self.request_layout(node);
 
-            let index = children
-                .iter()
-                .position(|child| *child == node.id)
-                .expect("`node` is a child of `parent`");
-
-            let _ = self.tree.replace_child_at_index(parent, index, other.id);
+        if let Some(state) = self.nodes.get(&node.0)
+            && let Some(parent) = state.parent
+            && let Some(parent) = self.nodes.get_mut(&parent)
+            && let Some(child) = parent.children.iter_mut().find(|child| **child == node.0)
+        {
+            *child = other.0;
         }
-
-        self.request_layout(other);
     }
 
     /// Remove a layout node.
     pub fn remove_node(&mut self, node: LayoutNode) {
+        fn remove_node<T>(tree: &mut LayoutTree<T>, node: u64) {
+            if let Some(node) = tree.nodes.remove(&node) {
+                for child in node.children {
+                    remove_node(tree, child)
+                }
+            }
+
+            tree.roots.remove(&node);
+        }
+
         self.request_layout(node);
-        let _ = self.tree.remove(node.id);
-        self.nodes.remove(&node);
-        self.roots.remove(&node);
+        remove_node(self, node.0);
     }
 
     /// Remove the child at `index` from a layout node.
     pub fn remove_child(&mut self, node: LayoutNode, index: usize) {
         self.request_layout(node);
 
-        if let Ok(id) = self.tree.remove_child_at_index(node.id, index) {
-            let node = LayoutNode { id };
-            self.nodes.remove(&node);
-        }
-    }
-
-    /// Set the size of a node without requesting layout.
-    pub fn set_size_without_request(&mut self, node: LayoutNode, size: Size<Option<Length>>) {
-        if let Ok(mut layout) = self.tree.style(node.id).cloned() {
-            layout.size = taffy::Size {
-                width:  Self::into_dimension(size.width),
-                height: Self::into_dimension(size.height),
-            };
-
-            let _ = self.tree.set_style(node.id, layout);
+        if let Some(node) = self.nodes.get_mut(&node.0) {
+            let child = node.children.remove(index);
+            self.nodes.remove(&child);
         }
     }
 
     /// Set the layout style of a layout node.
     pub fn set_layout(&mut self, node: LayoutNode, style: LayoutStyle) {
-        let Ok(mut layout) = self.tree.style(node.id).cloned() else {
+        let Some(layout) = self.nodes.get_mut(&node.0) else {
             return;
         };
 
-        layout.position = Self::into_position(style.position);
-        layout.align_self = style.align_self.map(Self::into_align);
-        layout.flex_shrink = style.flex_shrink;
-        layout.flex_grow = style.flex_grow;
-        layout.flex_basis = Self::into_dimension(style.flex_basis);
-        layout.aspect_ratio = style.aspect_ratio;
+        layout.style.position = Self::into_position(style.position);
+        layout.style.align_self = style.align_self.map(Self::into_align);
+        layout.style.flex_shrink = style.flex_shrink;
+        layout.style.flex_grow = style.flex_grow;
+        layout.style.flex_basis = Self::into_dimension(style.flex_basis);
+        layout.style.aspect_ratio = style.aspect_ratio;
 
-        layout.margin = taffy::Rect {
+        layout.style.margin = taffy::Rect {
             top:    Self::into_length_auto(style.margin.top),
             right:  Self::into_length_auto(style.margin.right),
             bottom: Self::into_length_auto(style.margin.bottom),
             left:   Self::into_length_auto(style.margin.left),
         };
 
-        layout.inset = taffy::Rect {
+        layout.style.inset = taffy::Rect {
             top:    Self::into_length_auto(style.inset.top),
             right:  Self::into_length_auto(style.inset.right),
             bottom: Self::into_length_auto(style.inset.bottom),
             left:   Self::into_length_auto(style.inset.left),
         };
 
-        layout.size = taffy::Size {
+        layout.style.size = taffy::Size {
             width:  Self::into_dimension(style.size.width),
             height: Self::into_dimension(style.size.height),
         };
 
-        layout.min_size = taffy::Size {
+        layout.style.min_size = taffy::Size {
             width:  Self::into_length_auto(style.min_size.width),
             height: Self::into_length_auto(style.min_size.height),
         };
 
-        layout.max_size = taffy::Size {
+        layout.style.max_size = taffy::Size {
             width:  Self::into_length_auto(style.max_size.width),
             height: Self::into_length_auto(style.max_size.height),
         };
 
         self.request_layout(node);
-        let _ = self.tree.set_style(node.id, layout);
     }
 
     /// Set the border style of a layout node.
     pub fn set_border(&mut self, node: LayoutNode, style: BorderStyle) {
-        let Ok(mut layout) = self.tree.style(node.id).cloned() else {
+        let Some(layout) = self.nodes.get_mut(&node.0) else {
             return;
         };
 
-        layout.border = taffy::Rect {
+        layout.style.border = taffy::Rect {
             top:    Self::into_length(style.width.top),
             right:  Self::into_length(style.width.right),
             bottom: Self::into_length(style.width.bottom),
@@ -448,16 +461,15 @@ impl<P> LayoutTree<P> {
         };
 
         self.request_layout(node);
-        let _ = self.tree.set_style(node.id, layout);
     }
 
     /// Set the padding of a layout node.
     pub fn set_padding(&mut self, node: LayoutNode, padding: Sides<Length>) {
-        let Ok(mut layout) = self.tree.style(node.id).cloned() else {
+        let Some(layout) = self.nodes.get_mut(&node.0) else {
             return;
         };
 
-        layout.padding = taffy::Rect {
+        layout.style.padding = taffy::Rect {
             top:    Self::into_length(padding.top),
             right:  Self::into_length(padding.right),
             bottom: Self::into_length(padding.bottom),
@@ -465,31 +477,29 @@ impl<P> LayoutTree<P> {
         };
 
         self.request_layout(node);
-        let _ = self.tree.set_style(node.id, layout);
     }
 
     /// Set the overflow of a layout node.
     pub fn set_overflow(&mut self, node: LayoutNode, overflow: Size<Overflow>) {
-        let Ok(mut layout) = self.tree.style(node.id).cloned() else {
+        let Some(layout) = self.nodes.get_mut(&node.0) else {
             return;
         };
 
-        layout.overflow = taffy::Point {
+        layout.style.overflow = taffy::Point {
             x: Self::into_overflow(overflow.width),
             y: Self::into_overflow(overflow.height),
         };
 
         self.request_layout(node);
-        let _ = self.tree.set_style(node.id, layout);
     }
 
     /// Set the flex parameters of a layout node.
     pub fn set_flex(&mut self, node: LayoutNode, flex: FlexStyle) {
-        let Ok(mut layout) = self.tree.style(node.id).cloned() else {
+        let Some(layout) = self.nodes.get_mut(&node.0) else {
             return;
         };
 
-        layout.flex_direction = match flex.direction {
+        layout.style.flex_direction = match flex.direction {
             Direction::Horizontal if flex.reverse => taffy::FlexDirection::RowReverse,
             Direction::Vertical if flex.reverse => taffy::FlexDirection::ColumnReverse,
 
@@ -497,21 +507,20 @@ impl<P> LayoutTree<P> {
             Direction::Vertical => taffy::FlexDirection::Column,
         };
 
-        layout.flex_wrap = match flex.wrap {
+        layout.style.flex_wrap = match flex.wrap {
             true => taffy::FlexWrap::Wrap,
             false => taffy::FlexWrap::NoWrap,
         };
 
-        layout.gap = taffy::Size {
+        layout.style.gap = taffy::Size {
             width:  Self::into_length(flex.gap.width),
             height: Self::into_length(flex.gap.height),
         };
 
-        layout.justify_content = flex.justify_content.map(Self::into_justify);
-        layout.align_items = flex.align_items.map(Self::into_align);
+        layout.style.justify_content = flex.justify_content.map(Self::into_justify);
+        layout.style.align_items = flex.align_items.map(Self::into_align);
 
         self.request_layout(node);
-        let _ = self.tree.set_style(node.id, layout);
     }
 
     /// Set the measure of a layout.
@@ -520,7 +529,9 @@ impl<P> LayoutTree<P> {
         T: Measurable<P> + 'static,
     {
         self.request_layout(node);
-        let _ = self.tree.set_node_context(node.id, Some(Box::new(measure)));
+        if let Some(node) = self.nodes.get_mut(&node.0) {
+            node.measurable = Some(Box::new(measure));
+        }
     }
 
     fn into_overflow(overflow: Overflow) -> taffy::Overflow {
@@ -597,4 +608,317 @@ impl<P> LayoutTree<P> {
             Justify::SpaceAround => taffy::AlignContent::SPACE_AROUND,
         }
     }
+}
+
+struct ChildIter<'a>(std::slice::Iter<'a, u64>);
+
+impl<'a> Iterator for ChildIter<'a> {
+    type Item = taffy::NodeId;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().copied().map(From::from)
+    }
+}
+
+struct LayoutView<'a, P> {
+    scale:         f32,
+    scale_inverse: f32,
+    platform:      &'a mut P,
+    layout:        &'a mut LayoutTree<P>,
+}
+
+impl<P> taffy::TraversePartialTree for LayoutView<'_, P> {
+    type ChildIter<'a>
+        = ChildIter<'a>
+    where
+        Self: 'a;
+
+    fn child_ids(&self, parent_node_id: taffy::NodeId) -> Self::ChildIter<'_> {
+        let node = self
+            .layout
+            .nodes
+            .get(&parent_node_id.into())
+            .expect("`parent_node_id` should always be valid ");
+
+        ChildIter(node.children.iter())
+    }
+
+    fn child_count(&self, parent_node_id: taffy::NodeId) -> usize {
+        self.layout
+            .nodes
+            .get(&parent_node_id.into())
+            .map_or(0, |node| node.children.len())
+    }
+
+    fn get_child_id(&self, parent_node_id: taffy::NodeId, child_index: usize) -> taffy::NodeId {
+        let node = self
+            .layout
+            .nodes
+            .get(&parent_node_id.into())
+            .expect("`parent_node_id` should always be valid ");
+
+        node.children
+            .get(child_index)
+            .copied()
+            .expect("`child_index` should be valid")
+            .into()
+    }
+}
+
+impl<P> taffy::CacheTree for LayoutView<'_, P> {
+    fn cache_get(
+        &mut self,
+        node_id: taffy::NodeId,
+        input: &taffy::LayoutInput,
+    ) -> Option<taffy::LayoutOutput> {
+        let node = self.layout.nodes.get_mut(&node_id.into())?;
+        node.cache.get(input)
+    }
+
+    fn cache_store(
+        &mut self,
+        node_id: taffy::NodeId,
+        input: &taffy::LayoutInput,
+        layout_output: taffy::LayoutOutput,
+    ) {
+        if let Some(node) = self.layout.nodes.get_mut(&node_id.into()) {
+            node.cache.store(input, layout_output);
+        }
+    }
+
+    fn cache_clear(&mut self, node_id: taffy::NodeId) {
+        if let Some(node) = self.layout.nodes.get_mut(&node_id.into()) {
+            node.cache.clear();
+        }
+    }
+}
+
+impl<P> taffy::LayoutPartialTree for LayoutView<'_, P>
+where
+    P: Platform,
+{
+    type CoreContainerStyle<'a>
+        = &'a taffy::Style
+    where
+        Self: 'a;
+
+    type CustomIdent = String;
+
+    fn get_core_container_style(&self, node_id: taffy::NodeId) -> Self::CoreContainerStyle<'_> {
+        let node = self
+            .layout
+            .nodes
+            .get(&node_id.into())
+            .expect("`node_id` should always be valid ");
+
+        &node.style
+    }
+
+    fn set_unrounded_layout(&mut self, node_id: taffy::NodeId, layout: &taffy::Layout) {
+        let node = self
+            .layout
+            .nodes
+            .get_mut(&node_id.into())
+            .expect("`node_id` should always be valid ");
+
+        node.unrounded = *layout;
+    }
+
+    fn compute_child_layout(
+        &mut self,
+        node_id: taffy::NodeId,
+        inputs: taffy::LayoutInput,
+    ) -> taffy::LayoutOutput {
+        if inputs.run_mode == taffy::RunMode::PerformHiddenLayout {
+            return taffy::compute_hidden_layout(self, node_id);
+        }
+
+        taffy::compute_cached_layout(
+            self,
+            node_id,
+            inputs,
+            |tree, node_id, inputs| {
+                let Some(node) = tree.layout.nodes.get_mut(&node_id.into()) else {
+                    return taffy::LayoutOutput::HIDDEN;
+                };
+
+                if let Some(ref mut measurable) = node.measurable {
+                    let mut baseline = None;
+                    let mut output = taffy::compute_leaf_layout(
+                        inputs,
+                        &node.style,
+                        |_, _| 0.0,
+                        |known_size, available_space| {
+                            let known_size = Size {
+                                width:  known_size.width,
+                                height: known_size.height,
+                            };
+
+                            let available_space = Size {
+                                width:  LayoutTree::<P>::from_available_space(
+                                    available_space.width,
+                                ),
+                                height: LayoutTree::<P>::from_available_space(
+                                    available_space.height,
+                                ),
+                            };
+
+                            let (measured_size, measured_baseline) = measurable.measure(
+                                tree.platform,
+                                known_size,
+                                available_space,
+                            );
+
+                            baseline = measured_baseline;
+
+                            taffy::Size {
+                                width:  measured_size.width,
+                                height: measured_size.height,
+                            }
+                        },
+                    );
+
+                    output.baselines.first = baseline;
+                    return output;
+                }
+
+                match node.style.display {
+                    taffy::Display::None => taffy::compute_hidden_layout(tree, node_id),
+                    taffy::Display::Flex => taffy::compute_flexbox_layout(tree, node_id, inputs),
+                    taffy::Display::Grid => taffy::compute_grid_layout(tree, node_id, inputs),
+                }
+            },
+        )
+    }
+}
+
+impl<P> taffy::LayoutFlexboxContainer for LayoutView<'_, P>
+where
+    P: Platform,
+{
+    type FlexboxContainerStyle<'a>
+        = &'a taffy::Style
+    where
+        Self: 'a;
+
+    type FlexboxItemStyle<'a>
+        = &'a taffy::Style
+    where
+        Self: 'a;
+
+    fn get_flexbox_container_style(
+        &self,
+        node_id: taffy::NodeId,
+    ) -> Self::FlexboxContainerStyle<'_> {
+        let node = self
+            .layout
+            .nodes
+            .get(&node_id.into())
+            .expect("`node_id` should always be valid ");
+
+        &node.style
+    }
+
+    fn get_flexbox_child_style(&self, child_node_id: taffy::NodeId) -> Self::FlexboxItemStyle<'_> {
+        let node = self
+            .layout
+            .nodes
+            .get(&child_node_id.into())
+            .expect("`child_node_id` should always be valid ");
+
+        &node.style
+    }
+}
+
+impl<P> taffy::LayoutGridContainer for LayoutView<'_, P>
+where
+    P: Platform,
+{
+    type GridContainerStyle<'a>
+        = &'a taffy::Style
+    where
+        Self: 'a;
+
+    type GridItemStyle<'a>
+        = &'a taffy::Style
+    where
+        Self: 'a;
+
+    fn get_grid_container_style(&self, node_id: taffy::NodeId) -> Self::GridContainerStyle<'_> {
+        let node = self
+            .layout
+            .nodes
+            .get(&node_id.into())
+            .expect("`node_id` should always be valid ");
+
+        &node.style
+    }
+
+    fn get_grid_child_style(&self, child_node_id: taffy::NodeId) -> Self::GridItemStyle<'_> {
+        let node = self
+            .layout
+            .nodes
+            .get(&child_node_id.into())
+            .expect("`child_node_id` should always be valid ");
+
+        &node.style
+    }
+}
+
+impl<P> taffy::TraverseTree for LayoutView<'_, P> {}
+
+impl<P> taffy::RoundTree for LayoutView<'_, P> {
+    fn get_unrounded_layout(&self, node_id: taffy::NodeId) -> taffy::Layout {
+        let node = self
+            .layout
+            .nodes
+            .get(&node_id.into())
+            .expect("`node_id` should always be valid ");
+
+        let mut layout = node.unrounded;
+        scale_taffy_layout(&mut layout, self.scale);
+        layout
+    }
+
+    fn set_final_layout(&mut self, node_id: taffy::NodeId, layout: &taffy::Layout) {
+        let node = self
+            .layout
+            .nodes
+            .get_mut(&node_id.into())
+            .expect("`node_id` should always be valid ");
+
+        let mut layout = *layout;
+        scale_taffy_layout(&mut layout, self.scale_inverse);
+        node.rounded = layout;
+    }
+}
+
+fn scale_taffy_layout(layout: &mut taffy::Layout, scale: f32) {
+    fn scale_point(point: &mut taffy::Point<f32>, scale: f32) {
+        point.x *= scale;
+        point.y *= scale;
+    }
+
+    fn scale_size(size: &mut taffy::Size<f32>, scale: f32) {
+        size.width *= scale;
+        size.height *= scale;
+    }
+
+    fn scale_rect(rect: &mut taffy::Rect<f32>, scale: f32) {
+        rect.top *= scale;
+        rect.right *= scale;
+        rect.bottom *= scale;
+        rect.left *= scale;
+    }
+
+    scale_point(&mut layout.location, scale);
+    scale_size(&mut layout.size, scale);
+    scale_rect(
+        &mut layout.scrollable_overflow_rect,
+        scale,
+    );
+    scale_size(&mut layout.scrollbar_size, scale);
+    scale_rect(&mut layout.border, scale);
+    scale_rect(&mut layout.padding, scale);
+    scale_rect(&mut layout.margin, scale);
 }

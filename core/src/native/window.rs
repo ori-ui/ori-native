@@ -21,6 +21,9 @@ where
     /// Get the current size of the window.
     fn get_size(&self, platform: &mut P) -> (f32, f32);
 
+    /// Get the current scale factor of the window.
+    fn get_scale(&self, platform: &mut P) -> f32;
+
     /// Get the preferred size of the window.
     ///
     /// Imagine a phone app where the window size is fixed.
@@ -93,6 +96,10 @@ where
     }
 
     fn get_size(&self, _platform: &mut P) -> (f32, f32) {
+        unreachable!()
+    }
+
+    fn get_scale(&self, _platform: &mut P) -> f32 {
         unreachable!()
     }
 

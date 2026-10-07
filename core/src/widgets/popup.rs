@@ -156,6 +156,7 @@ where
                 &mut cx.platform,
                 contents.layout_node(),
                 space,
+                1.0,
             );
 
             if let Some(allocation) = cx.layout.get_allocation(contents.layout_node())
