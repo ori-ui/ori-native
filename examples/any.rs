@@ -22,6 +22,7 @@ fn ui(data: &Data) -> impl Effect<Data> + use<> {
     window(
         row(column((toggle, self::toggle(data))))
             .flex(1.0)
+            .background(Color::WHITE)
             .justify_content(Justify::Center)
             .align_items(Align::Center),
     )

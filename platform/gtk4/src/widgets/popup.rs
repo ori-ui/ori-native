@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use glib::{
     object::{Cast, IsA},
     subclass::types::ObjectSubclassIsExt,
@@ -35,7 +37,23 @@ impl NativePopup<Platform> for Popup {
 
     fn open(&mut self, _platform: &mut Platform, contents: gtk4::Widget) {
         self.set_contents(Some(&contents));
-        self.imp().popover.popup();
+
+        if let Some(anchor) = self.imp().anchor.borrow().clone() {
+            if anchor.is_realized() {
+                self.imp().popover.popup();
+            } else {
+                let popover = self.imp().popover.clone();
+                let delay = Duration::from_millis(200);
+
+                glib::timeout_add_local_once(delay, move || {
+                    if anchor.is_realized() {
+                        popover.popup();
+                    } else {
+                        tracing::warn!("popup couldn't be opened");
+                    }
+                });
+            }
+        }
     }
 
     fn close(&mut self, _platform: &mut Platform) {
