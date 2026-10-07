@@ -396,7 +396,7 @@ impl Argument {
             return quote! {
                 #[automatically_derived]
                 #(#docs)*
-                fn #ident(self, #ident: impl ::std::convert::Into<#ty>) -> #builder;
+                fn #ident(self, #ident: impl Into<#ty>) -> #builder;
             };
         }
 
