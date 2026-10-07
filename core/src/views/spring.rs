@@ -154,7 +154,7 @@ where
         }
 
         if (state.position - state.target).abs() <= state.threshold
-            && state.velocity <= state.threshold
+            && state.velocity.abs() <= state.threshold
         {
             state.velocity = 0.0;
             state.position = state.target;
