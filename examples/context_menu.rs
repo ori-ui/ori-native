@@ -23,8 +23,8 @@ fn ui(_data: &Data) -> impl Effect<Data> + use<> {
                 popup(
                     column(()).background(Color::WHITE).flex(1.0),
                     menu.as_ref().map(|_| {
-                        column(menu_button(text("Quit"), |_| -> () {
-                            std::process::exit(1);
+                        column(menu_button(text("Quit"), |_| {
+                            Action::quit()
                         }))
                         .background(Color::WHITE)
                         .border(1.0, Color::BLACK.fade(0.2))
