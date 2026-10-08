@@ -363,6 +363,35 @@ impl<P> LayoutTree<P> {
         }
     }
 
+    /// Swap the order of two children of `parent`.
+    pub fn swap_children(&mut self, parent: LayoutNode, index_a: usize, index_b: usize) {
+        self.request_layout(parent);
+
+        let Some(node) = self.nodes.get_mut(&parent.0) else {
+            tracing::error!(
+                ?parent,
+                index_a,
+                index_b,
+                "tried to swap children of invalid node",
+            );
+            return;
+        };
+
+        if index_a >= node.children.len() || index_b >= node.children.len() {
+            tracing::error!(
+                ?parent,
+                index_a,
+                index_b,
+                len = node.children.len(),
+                "tried to swap children with invalid indices",
+            );
+
+            return;
+        }
+
+        node.children.swap(index_a, index_b);
+    }
+
     /// Replace `node` with `other`.
     pub fn replace_node(&mut self, node: LayoutNode, other: LayoutNode) {
         self.request_layout(node);

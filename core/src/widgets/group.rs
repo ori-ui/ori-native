@@ -209,18 +209,10 @@ where
     }
 
     fn swap(&mut self, cx: &mut Context<P>, offset: usize) {
-        cx.layout.replace_child(
+        cx.layout.swap_children(
             self.parent.layout,
             self.parent.index,
-            self.children[self.parent.index + offset]
-                .element
-                .layout_node(),
-        );
-
-        cx.layout.replace_child(
-            self.parent.layout,
             self.parent.index + offset,
-            self.children[self.parent.index].element.layout_node(),
         );
 
         self.parent.native.swap_children(
