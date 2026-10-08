@@ -426,8 +426,7 @@ impl<P> LayoutTree<P> {
         self.request_layout(node);
 
         if let Some(node) = self.nodes.get_mut(&node.0) {
-            let child = node.children.remove(index);
-            self.nodes.remove(&child);
+            node.children.remove(index);
         }
     }
 

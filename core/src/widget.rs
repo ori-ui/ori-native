@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use ori::{AnyView, Element, Sub, View, ViewSeq};
+use ori::{AnyView, Element, Sub, View, ViewSeq, views::Detachable};
 
 use crate::{Context, LayoutNode, Platform};
 
@@ -118,6 +118,33 @@ where
     P: Platform,
 {
     type Mut<'a> = WidgetMut<'a, P, Self>;
+}
+
+impl<P> Detachable<Context<P>> for BoxedWidget<P>
+where
+    P: Platform,
+{
+    fn as_detached<'a>(&'a mut self, _cx: &mut Context<P>) -> Self::Mut<'a> {
+        struct DetachParent;
+
+        impl<P> Parent<P> for DetachParent
+        where
+            P: Platform,
+        {
+            fn replace_child(
+                &mut self,
+                _cx: &mut Context<P>,
+                _widget: P::WidgetRef,
+                _layout: LayoutNode,
+            ) {
+            }
+        }
+
+        WidgetMut {
+            parent: Box::leak(Box::new(DetachParent)),
+            widget: self,
+        }
+    }
 }
 
 impl<P, T> Sub<Context<P>, T> for BoxedWidget<P>
