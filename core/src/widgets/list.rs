@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, time::Duration};
 
-use ori::Element;
+use ori::{Element, ViewId};
 
 use crate::{
     Allocation, Context, Direction, FlexStyle, LayoutNode, LayoutStyle, Length, Overflow, Parent,
@@ -18,6 +18,7 @@ where
     scroll:        P::Scroll,
     group_layout:  LayoutNode,
     scroll_layout: LayoutNode,
+    root:          Option<ViewId>,
 
     direction: Direction,
     gap:       f32,
@@ -75,6 +76,7 @@ where
             scroll,
             group_layout,
             scroll_layout,
+            root: None,
 
             direction: Direction::Vertical,
             gap: 0.0,
@@ -218,7 +220,9 @@ where
     }
 
     /// Insert a widget at the front of the `active` window.
-    pub fn insert_front(&mut self, cx: &mut Context<P>, child: W) {
+    pub fn insert_front(&mut self, cx: &mut Context<P>, mut child: W) {
+        child.set_root(cx, self.root);
+
         (self.group).insert_child(&mut cx.platform, 0, child.widget_ref());
 
         let layout = cx.layout.add_node(&[child.layout_node()]);
@@ -242,7 +246,9 @@ where
     }
 
     /// Insert a widget at the back of the `active` window.
-    pub fn insert_back(&mut self, cx: &mut Context<P>, child: W) {
+    pub fn insert_back(&mut self, cx: &mut Context<P>, mut child: W) {
+        child.set_root(cx, self.root);
+
         let index = self.children.len();
         self.group.insert_child(
             &mut cx.platform,
@@ -271,7 +277,8 @@ where
 
     /// Remove a widget at the front of the `active` window.
     pub fn remove_front(&mut self, cx: &mut Context<P>) -> Option<W> {
-        let child = self.children.pop_front()?;
+        let mut child = self.children.pop_front()?;
+        child.widget.set_root(cx, None);
 
         self.group.remove_child(&mut cx.platform, 0);
         cx.layout.remove_child(self.group_layout, 0);
@@ -284,7 +291,8 @@ where
 
     /// Remove a widget at the back of the `active` window.
     pub fn remove_back(&mut self, cx: &mut Context<P>) -> Option<W> {
-        let child = self.children.pop_back()?;
+        let mut child = self.children.pop_back()?;
+        child.widget.set_root(cx, None);
 
         (self.group).remove_child(&mut cx.platform, self.children.len());
         (cx.layout).remove_child(self.group_layout, self.children.len());
@@ -599,6 +607,14 @@ where
     fn animate(&mut self, cx: &mut Context<P>, dt: Duration) {
         for view in &mut self.children {
             view.widget.animate(cx, dt);
+        }
+    }
+
+    fn set_root(&mut self, cx: &mut Context<P>, root: Option<ViewId>) {
+        self.root = root;
+
+        for view in &mut self.children {
+            view.widget.set_root(cx, root);
         }
     }
 }

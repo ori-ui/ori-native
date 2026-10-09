@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use ori::{Element, Elements, Mut};
+use ori::{Element, Elements, Mut, ViewId};
 
 use crate::{
     Allocation, BorderStyle, BoxedWidget, Color, Context, Corners, FlexStyle, LayoutNode,
@@ -15,6 +15,7 @@ where
 {
     native:       P::Group,
     layout:       LayoutNode,
+    root:         Option<ViewId>,
     children:     Vec<Child<P>>,
     border_width: Sides<f32>,
 }
@@ -33,6 +34,7 @@ where
         Self {
             native:       P::Group::build(&mut cx.platform),
             layout:       cx.layout.add_node(&[]),
+            root:         None,
             children:     Vec::new(),
             border_width: Sides::all(0.0),
         }
@@ -47,6 +49,7 @@ where
     /// Get the [`Elements`].
     pub fn elements(&mut self) -> impl Elements<Context<P>, BoxedWidget<P>> {
         GroupElements {
+            root:     self.root,
             parent:   GroupParent {
                 index:  0,
                 native: &mut self.native,
@@ -148,12 +151,21 @@ where
             child.element.animate(cx, dt);
         }
     }
+
+    fn set_root(&mut self, cx: &mut Context<P>, root: Option<ViewId>) {
+        self.root = root;
+
+        for child in &mut self.children {
+            child.element.set_root(cx, root);
+        }
+    }
 }
 
 struct GroupElements<'a, P>
 where
     P: Platform,
 {
+    root:     Option<ViewId>,
     parent:   GroupParent<'a, P>,
     children: &'a mut Vec<Child<P>>,
 }
@@ -176,7 +188,9 @@ where
         ))
     }
 
-    fn insert(&mut self, cx: &mut Context<P>, element: BoxedWidget<P>) {
+    fn insert(&mut self, cx: &mut Context<P>, mut element: BoxedWidget<P>) {
+        element.set_root(cx, self.root);
+
         cx.layout.insert_child(
             self.parent.layout,
             self.parent.index,
@@ -200,7 +214,8 @@ where
     }
 
     fn remove(&mut self, cx: &mut Context<P>) -> Option<BoxedWidget<P>> {
-        let child = self.children.remove(self.parent.index);
+        let mut child = self.children.remove(self.parent.index);
+        child.element.set_root(cx, None);
 
         (self.parent.native).remove_child(&mut cx.platform, self.parent.index);
         (cx.layout).remove_child(self.parent.layout, self.parent.index);

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use ori::Element;
+use ori::{Element, ViewId};
 
 use crate::{
     Allocation, Context, LayoutNode, Parent, Platform, Widget, WidgetMut, native::NativeMeasure,
@@ -100,6 +100,10 @@ where
 
     fn animate(&mut self, cx: &mut Context<P>, dt: Duration) {
         self.contents.animate(cx, dt);
+    }
+
+    fn set_root(&mut self, cx: &mut Context<P>, root: Option<ViewId>) {
+        self.contents.set_root(cx, root);
     }
 }
 

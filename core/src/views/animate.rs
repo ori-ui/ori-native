@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use ori::{Action, Message, Mut, Proxied, Proxy, Tracked, View, ViewId, ViewMarker};
 
-use crate::{Context, Platform, Widget, WidgetView, widget::WidgetMut, widgets::AnimateWidget};
+use crate::{Context, Platform, WidgetView, widget::WidgetMut, widgets::AnimateWidget};
 
 /// [`View`] that animates its contents.
 pub fn animate<T, A>(animation: A) -> Animate<T, A> {
@@ -88,11 +88,6 @@ where
         let view = A::view(&mut anim, data);
         let (element, state) = view.build(cx, data);
 
-        if is_animating {
-            let layout = element.layout_node();
-            cx.request_start_animating(layout);
-        }
-
         let view_id = ViewId::next();
         cx.register(view_id);
 
@@ -107,7 +102,8 @@ where
             }
         };
 
-        let widget = AnimateWidget::new(element, on_animate);
+        let mut widget = AnimateWidget::new(element, on_animate);
+        widget.set_animating(cx, is_animating);
 
         let state = AnimateState {
             view_id,
@@ -123,7 +119,7 @@ where
 
     fn rebuild(
         self,
-        element: Mut<'_, Self::Element>,
+        mut element: Mut<'_, Self::Element>,
         state: &mut Self::State,
         cx: &mut Context<P>,
         data: &mut T,
@@ -141,19 +137,15 @@ where
         view.rebuild(widget, &mut state.state, cx, data);
 
         if state.is_animating != should_animate {
-            let layout = element.layout_node();
+            element.set_animating(cx, should_animate);
 
             match should_animate {
                 true => {
-                    cx.request_start_animating(layout);
-
                     let action = (state.on_start)(data);
                     cx.send_action(action);
                 }
 
                 false => {
-                    cx.request_stop_animating(layout);
-
                     let action = (state.on_end)(data);
                     cx.send_action(action);
                 }
@@ -164,7 +156,7 @@ where
     }
 
     fn message(
-        element: Mut<'_, Self::Element>,
+        mut element: Mut<'_, Self::Element>,
         state: &mut Self::State,
         cx: &mut Context<P>,
         data: &mut T,
@@ -186,18 +178,11 @@ where
             let mut action = Action::new();
 
             if state.is_animating != should_animate {
-                let layout = element.layout_node();
+                element.set_animating(cx, should_animate);
 
                 match should_animate {
-                    true => {
-                        cx.request_start_animating(layout);
-                        action = (state.on_start)(data);
-                    }
-
-                    false => {
-                        cx.request_stop_animating(layout);
-                        action = (state.on_end)(data);
-                    }
+                    true => action = (state.on_start)(data),
+                    false => action = (state.on_end)(data),
                 }
 
                 state.is_animating = should_animate;
@@ -220,11 +205,9 @@ where
         )
     }
 
-    fn teardown(element: Self::Element, state: Self::State, cx: &mut Context<P>) {
-        let layout = element.layout_node();
-
+    fn teardown(mut element: Self::Element, state: Self::State, cx: &mut Context<P>) {
         if state.is_animating {
-            cx.request_stop_animating(layout);
+            element.set_animating(cx, false);
         }
 
         let contents = element.teardown();

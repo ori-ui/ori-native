@@ -1,8 +1,8 @@
 use std::{any::Any, sync::Arc};
 
-use ori::{Action, AnyView, Base, Message, Provider, Proxied, Proxy, Tracked, Tree};
+use ori::{Action, AnyView, Base, Message, Provider, Proxied, Proxy, Tracked, Tree, ViewId};
 
-use crate::{AnimateRequest, BoxedWidget, LayoutNode, LayoutTree, Platform, Resources};
+use crate::{AnimateRequest, BoxedWidget, LayoutTree, Platform, Resources};
 
 /// The context of the [`View`](ori::View) tree.
 pub struct Context<P>
@@ -36,19 +36,15 @@ where
     }
 
     /// Request starting to animate.
-    pub fn request_start_animating(&mut self, node: LayoutNode) {
-        if let Some(root) = self.layout.get_root(node) {
-            let message = Message::new(AnimateRequest::Start, root);
-            self.platform.proxy().message(message);
-        }
+    pub fn request_start_animating(&mut self, root: ViewId) {
+        let message = Message::new(AnimateRequest::Start, root);
+        self.platform.proxy().message(message);
     }
 
     /// Request stopping animating.
-    pub fn request_stop_animating(&mut self, node: LayoutNode) {
-        if let Some(root) = self.layout.get_root(node) {
-            let message = Message::new(AnimateRequest::Stop, root);
-            self.platform.proxy().message(message);
-        }
+    pub fn request_stop_animating(&mut self, root: ViewId) {
+        let message = Message::new(AnimateRequest::Stop, root);
+        self.platform.proxy().message(message);
     }
 }
 

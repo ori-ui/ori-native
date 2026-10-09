@@ -263,7 +263,8 @@ where
         );
         cx.layout.insert_root(node, view_id);
 
-        let (contents, state) = contents.build(cx, data);
+        let (mut contents, state) = contents.build(cx, data);
+        contents.set_root(cx, Some(view_id));
 
         let mut window = build(&mut cx.platform, contents.widget_ref());
 

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use ori::Element;
+use ori::{Element, ViewId};
 
 use crate::{
     Allocation, Context, Direction, FlexStyle, LayoutNode, LayoutStyle, Overflow, Parent, Platform,
@@ -149,6 +149,10 @@ where
 
     fn animate(&mut self, cx: &mut Context<P>, dt: Duration) {
         self.contents.animate(cx, dt);
+    }
+
+    fn set_root(&mut self, cx: &mut Context<P>, root: Option<ViewId>) {
+        self.contents.set_root(cx, root);
     }
 }
 

@@ -1,6 +1,6 @@
 use std::{borrow::Cow, time::Duration};
 
-use ori::Element;
+use ori::{Element, ViewId};
 
 use crate::{
     Color, Context, LayoutNode, LayoutStyle, Platform, Widget, WidgetMut, native::NativeImage,
@@ -81,4 +81,6 @@ where
     fn layout(&mut self, _cx: &mut Context<P>) {}
 
     fn animate(&mut self, _cx: &mut Context<P>, _dt: Duration) {}
+
+    fn set_root(&mut self, _cx: &mut Context<P>, _root: Option<ViewId>) {}
 }

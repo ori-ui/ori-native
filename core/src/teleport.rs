@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use ori::{Element, Split, Teleportable};
+use ori::{Element, Split, Teleportable, ViewId};
 
 use crate::{
     Allocation, BoxedWidget, Context, LayoutNode, Parent, Platform, Widget, native::NativeGroup,
@@ -146,6 +146,14 @@ where
 
         if let Some(inner) = inner.as_mut() {
             inner.boxed.animate(cx, dt);
+        }
+    }
+
+    fn set_root(&mut self, cx: &mut Context<P>, root: Option<ViewId>) {
+        let mut inner = self.inner.lock().expect("locking should not fail");
+
+        if let Some(inner) = inner.as_mut() {
+            inner.boxed.set_root(cx, root);
         }
     }
 }

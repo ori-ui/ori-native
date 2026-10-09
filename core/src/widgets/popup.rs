@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use ori::Element;
+use ori::{Element, ViewId};
 
 use crate::{
     Allocation, AvailableSpace, Context, LayoutNode, Parent, Platform, PopupPosition, Size, Widget,
@@ -188,6 +188,14 @@ where
 
         if let Some(ref mut contents) = self.contents {
             contents.animate(cx, dt);
+        }
+    }
+
+    fn set_root(&mut self, cx: &mut Context<P>, root: Option<ViewId>) {
+        self.anchor.set_root(cx, root);
+
+        if let Some(ref mut contents) = self.contents {
+            contents.set_root(cx, root);
         }
     }
 }

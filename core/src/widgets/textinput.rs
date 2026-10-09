@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use ori::Element;
+use ori::{Element, ViewId};
 
 use crate::{
     CachedMeasurable, Color, Context, Font, LayoutNode, LayoutStyle, Newline, Platform, Submit,
@@ -112,4 +112,6 @@ where
     fn layout(&mut self, _cx: &mut Context<P>) {}
 
     fn animate(&mut self, _cx: &mut Context<P>, _dt: Duration) {}
+
+    fn set_root(&mut self, _cx: &mut Context<P>, _root: Option<ViewId>) {}
 }

@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use ori::{AnyView, Element, Sub, View, ViewSeq, views::Detachable};
+use ori::{AnyView, Element, Sub, View, ViewId, ViewSeq, views::Detachable};
 
 use crate::{Context, LayoutNode, Platform};
 
@@ -25,6 +25,9 @@ where
 
     /// Animate the widget after an animation frame as passed.
     fn animate(&mut self, cx: &mut Context<P>, dt: Duration);
+
+    /// Set the root view of the widget and all its descendants.
+    fn set_root(&mut self, cx: &mut Context<P>, root: Option<ViewId>);
 }
 
 /// A handle for replacing a specific child of a node.
@@ -110,6 +113,10 @@ where
 
     fn animate(&mut self, cx: &mut Context<P>, dt: Duration) {
         self.as_mut().animate(cx, dt);
+    }
+
+    fn set_root(&mut self, cx: &mut Context<P>, root: Option<ViewId>) {
+        self.as_mut().set_root(cx, root);
     }
 }
 

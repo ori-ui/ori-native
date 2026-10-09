@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use ori::Element;
+use ori::{Element, ViewId};
 
 use crate::{
     CachedMeasurable, Context, LayoutNode, LayoutStyle, Platform, TextAlign, TextSpan, TextWrap,
@@ -81,6 +81,8 @@ where
     fn layout(&mut self, _cx: &mut Context<P>) {}
 
     fn animate(&mut self, _cx: &mut Context<P>, _dt: Duration) {}
+
+    fn set_root(&mut self, _cx: &mut Context<P>, _root: Option<ViewId>) {}
 }
 
 impl<P> Element for TextWidget<P>
