@@ -380,7 +380,11 @@ where
             layout: self.layout,
         };
 
-        let widget = WidgetMut::new(&mut parent, &mut self.contents);
+        let widget = WidgetMut::new(
+            Some(self.view_id),
+            &mut parent,
+            &mut self.contents,
+        );
         contents.rebuild(widget, &mut self.state, cx, data);
 
         let (filter, handler) = attributes.input.split();
@@ -597,7 +601,11 @@ where
             layout: self.layout,
         };
 
-        let widget = WidgetMut::new(&mut parent, &mut self.contents);
+        let widget = WidgetMut::new(
+            Some(self.view_id),
+            &mut parent,
+            &mut self.contents,
+        );
 
         V::message(
             widget,

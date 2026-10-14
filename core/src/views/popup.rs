@@ -129,9 +129,11 @@ where
         cx: &mut Context<P>,
         data: &mut T,
     ) {
+        let root = element.root;
+
         {
             let (mut parent, anchor) = element.anchor_mut();
-            let widget = WidgetMut::new(&mut parent, anchor);
+            let widget = WidgetMut::new(root, &mut parent, anchor);
 
             self.anchor.rebuild(
                 widget,
@@ -145,7 +147,7 @@ where
             if let Some((mut parent, element)) = element.contents_mut()
                 && let Some(ref mut state) = state.contents_state
             {
-                let widget = WidgetMut::new(&mut parent, element);
+                let widget = WidgetMut::new(root, &mut parent, element);
                 contents.rebuild(widget, state, cx, data);
             } else {
                 let (contents, contents_state) = contents.build(cx, data);
@@ -194,9 +196,11 @@ where
 
         let mut action = Action::new();
 
+        let root = element.root;
+
         {
             let (mut parent, anchor) = element.anchor_mut();
-            let widget = WidgetMut::new(&mut parent, anchor);
+            let widget = WidgetMut::new(root, &mut parent, anchor);
             let state = &mut state.anchor_state;
             action |= V::message(widget, state, cx, data, message);
         }
@@ -204,7 +208,7 @@ where
         if let Some((mut parent, contents)) = element.contents_mut()
             && let Some(ref mut state) = state.contents_state
         {
-            let widget = WidgetMut::new(&mut parent, contents);
+            let widget = WidgetMut::new(root, &mut parent, contents);
             action |= W::message(widget, state, cx, data, message);
         }
 

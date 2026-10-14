@@ -187,9 +187,9 @@ where
         element.set_min_views(self.min_views);
         element.set_buffer(self.buffer);
 
-        state.update_active_views(&mut element, cx, data);
+        state.update_active_views(element.root, &mut element, cx, data);
         element.update_content_size(cx);
-        state.rebuild_active_views(&mut element, cx, data);
+        state.rebuild_active_views(element.root, &mut element, cx, data);
         element.layout_active_views(cx);
     }
 
@@ -202,7 +202,7 @@ where
     ) -> Action {
         match message.take(state.view_id) {
             Some(ListMessage::Layout) => {
-                state.update_active_views(&mut element, cx, data);
+                state.update_active_views(element.root, &mut element, cx, data);
                 element.layout_active_views(cx);
 
                 return Action::new();
@@ -215,7 +215,7 @@ where
                 };
 
                 element.set_offset(offset);
-                state.update_active_views(&mut element, cx, data);
+                state.update_active_views(element.root, &mut element, cx, data);
                 element.layout_active_views(cx);
 
                 return Action::new();
@@ -227,8 +227,10 @@ where
         let mut action = Action::new();
 
         for (i, state) in state.states.iter_mut().enumerate() {
+            let root = element.root;
+
             if let Some((mut parent, child)) = element.get_active(i) {
-                let widget = WidgetMut::new(&mut parent, child);
+                let widget = WidgetMut::new(root, &mut parent, child);
                 action |= V::message(widget, state, cx, data, message);
             }
         }
@@ -273,6 +275,7 @@ where
 {
     fn update_active_views(
         &mut self,
+        root: Option<ViewId>,
         widget: &mut ListWidget<P, V::Element>,
         cx: &mut Context<P>,
         data: &mut T,
@@ -288,7 +291,7 @@ where
         if widget.start().abs_diff(start) >= count {
             widget.set_start(start);
             self.truncate_active_back(widget, cx, count);
-            self.rebuild_active_views(widget, cx, data);
+            self.rebuild_active_views(root, widget, cx, data);
             self.build_active_back(widget, cx, data, count);
             return;
         }
@@ -316,16 +319,17 @@ where
         }
 
         while widget.start() > start {
-            self.rotate_backward(widget, cx, data);
+            self.rotate_backward(root, widget, cx, data);
         }
 
         while widget.start() < start {
-            self.rotate_forward(widget, cx, data);
+            self.rotate_forward(root, widget, cx, data);
         }
     }
 
     fn rotate_backward(
         &mut self,
+        root: Option<ViewId>,
         widget: &mut ListWidget<P, V::Element>,
         cx: &mut Context<P>,
         data: &mut T,
@@ -340,7 +344,7 @@ where
             && let Some(mut state) = self.states.pop_back()
         {
             let view = (self.build)(data, index);
-            let widget = WidgetMut::new(&mut parent, child);
+            let widget = WidgetMut::new(root, &mut parent, child);
             view.rebuild(widget, &mut state, cx, data);
             self.states.push_front(state);
         }
@@ -348,6 +352,7 @@ where
 
     fn rotate_forward(
         &mut self,
+        root: Option<ViewId>,
         widget: &mut ListWidget<P, V::Element>,
         cx: &mut Context<P>,
         data: &mut T,
@@ -362,7 +367,7 @@ where
             && let Some(mut state) = self.states.pop_front()
         {
             let view = (self.build)(data, index);
-            let widget = WidgetMut::new(&mut parent, child);
+            let widget = WidgetMut::new(root, &mut parent, child);
             view.rebuild(widget, &mut state, cx, data);
             self.states.push_back(state);
         }
@@ -370,6 +375,7 @@ where
 
     fn rebuild_active_views(
         &mut self,
+        root: Option<ViewId>,
         widget: &mut ListWidget<P, V::Element>,
         cx: &mut Context<P>,
         data: &mut T,
@@ -378,7 +384,7 @@ where
             let view = (self.build)(data, widget.start() + i);
 
             if let Some((mut parent, child)) = widget.get_active(i) {
-                let widget = WidgetMut::new(&mut parent, child);
+                let widget = WidgetMut::new(root, &mut parent, child);
                 view.rebuild(widget, state, cx, data);
             }
         }

@@ -1,5 +1,7 @@
 use std::{
     any::Any,
+    cell::Cell,
+    rc::Rc,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -41,15 +43,18 @@ where
         };
 
         let shared = Arc::new(Mutex::new(Some(inner)));
+        let root = Rc::new(Cell::new(None));
 
         let left = SplitWidget {
             inner: shared.clone(),
+            root: root.clone(),
             widget: widget.clone(),
             layout,
         };
 
         let right = SplitWidget {
             inner: shared,
+            root,
             widget,
             layout,
         };
@@ -73,7 +78,7 @@ where
         let contents = <dyn Any>::downcast_mut(inner.boxed.as_mut())
             .expect("split widget was created with widget of type `T`");
 
-        let widget = WidgetMut::new(&mut parent, contents);
+        let widget = WidgetMut::new(right.root.get(), &mut parent, contents);
 
         f(cx, widget)
     }
@@ -93,6 +98,7 @@ where
     P: Platform,
 {
     inner:  Arc<Mutex<Option<SplitWidgetInner<P>>>>,
+    root:   Rc<Cell<Option<ViewId>>>,
     widget: P::WidgetRef,
     layout: LayoutNode,
 }
@@ -151,6 +157,8 @@ where
 
     fn set_root(&mut self, cx: &mut Context<P>, root: Option<ViewId>) {
         let mut inner = self.inner.lock().expect("locking should not fail");
+
+        self.root.set(root);
 
         if let Some(inner) = inner.as_mut() {
             inner.boxed.set_root(cx, root);

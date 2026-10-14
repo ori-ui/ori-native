@@ -183,6 +183,7 @@ where
         self.parent.index += 1;
 
         Some(WidgetMut::new(
+            self.root,
             &mut self.parent,
             &mut child.element,
         ))

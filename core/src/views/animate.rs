@@ -129,6 +129,7 @@ where
         let should_animate = self.animation.rebuild(&mut state.anim, data);
 
         let widget = WidgetMut::new(
+            element.root,
             element.parent,
             element.widget.contents(),
         );
@@ -169,6 +170,7 @@ where
             let view = A::view(&mut state.anim, data);
 
             let widget = WidgetMut::new(
+                element.root,
                 element.parent,
                 element.widget.contents(),
             );
@@ -192,6 +194,7 @@ where
         }
 
         let widget = WidgetMut::new(
+            element.root,
             element.parent,
             element.widget.contents(),
         );

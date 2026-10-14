@@ -44,6 +44,9 @@ pub struct WidgetMut<'a, P, W>
 where
     P: Platform,
 {
+    /// The root [`View`].
+    pub root: Option<ViewId>,
+
     /// The [`Parent`] of this widget.
     pub parent: &'a mut dyn Parent<P>,
 
@@ -56,13 +59,18 @@ where
     P: Platform,
 {
     /// Create new [`WidgetMut`].
-    pub fn new(parent: &'a mut dyn Parent<P>, widget: &'a mut W) -> Self {
-        Self { parent, widget }
+    pub fn new(root: Option<ViewId>, parent: &'a mut dyn Parent<P>, widget: &'a mut W) -> Self {
+        Self {
+            root,
+            parent,
+            widget,
+        }
     }
 
     /// Reborrow `self`.
     pub fn reborrow(&mut self) -> WidgetMut<'_, P, W> {
         WidgetMut {
+            root:   self.root,
             parent: &mut *self.parent,
             widget: &mut *self.widget,
         }
@@ -148,6 +156,7 @@ where
         }
 
         WidgetMut {
+            root:   None,
             parent: Box::leak(Box::new(DetachParent)),
             widget: self,
         }
@@ -159,7 +168,10 @@ where
     P: Platform,
     T: Widget<P> + WidgetElement<P>,
 {
-    fn replace(cx: &mut Context<P>, this: Self::Mut<'_>, sub: T) -> Self {
+    fn replace(cx: &mut Context<P>, this: Self::Mut<'_>, mut sub: T) -> Self {
+        this.widget.set_root(cx, None);
+        sub.set_root(cx, this.root);
+
         let widget = sub.widget_ref();
         let layout = sub.layout_node();
         this.parent.replace_child(cx, widget, layout);
@@ -187,7 +199,11 @@ where
                 let widget = <dyn Any>::downcast_mut(this.widget.as_mut())
                     .expect("downcast should succeed since type was checked");
 
-                Ok(WidgetMut::new(this.parent, widget))
+                Ok(WidgetMut::new(
+                    this.root,
+                    this.parent,
+                    widget,
+                ))
             }
 
             false => Err(this),

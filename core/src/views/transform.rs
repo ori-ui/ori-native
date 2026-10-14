@@ -73,8 +73,9 @@ where
         data: &mut T,
     ) {
         {
+            let root = element.root;
             let (mut parent, contents) = element.contents_mut();
-            let widget = WidgetMut::new(&mut parent, contents);
+            let widget = WidgetMut::new(root, &mut parent, contents);
             self.contents.rebuild(widget, &mut state.state, cx, data);
         }
 
@@ -91,8 +92,9 @@ where
         data: &mut T,
         message: &mut Message,
     ) -> Action {
+        let root = element.root;
         let (mut parent, contents) = element.contents_mut();
-        let widget = WidgetMut::new(&mut parent, contents);
+        let widget = WidgetMut::new(root, &mut parent, contents);
 
         V::message(
             widget,

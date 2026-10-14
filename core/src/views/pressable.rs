@@ -292,8 +292,9 @@ where
     ) {
         {
             let view = (self.build)(data, state.press);
+            let root = element.root;
             let (mut parent, contents) = element.contents_mut();
-            let widget = WidgetMut::new(&mut parent, contents);
+            let widget = WidgetMut::new(root, &mut parent, contents);
             view.rebuild(widget, &mut state.state, cx, data);
         }
 
@@ -384,8 +385,9 @@ where
             if state.press != press {
                 state.press = press;
 
+                let root = element.root;
                 let (mut parent, contents) = element.contents_mut();
-                let widget = WidgetMut::new(&mut parent, contents);
+                let widget = WidgetMut::new(root, &mut parent, contents);
 
                 let view = (state.build)(data, state.press);
                 view.rebuild(widget, &mut state.state, cx, data);
@@ -401,8 +403,9 @@ where
             return Action::new();
         }
 
+        let root = element.root;
         let (mut parent, contents) = element.contents_mut();
-        let widget = WidgetMut::new(&mut parent, contents);
+        let widget = WidgetMut::new(root, &mut parent, contents);
 
         V::message(
             widget,

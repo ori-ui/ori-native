@@ -116,8 +116,9 @@ where
 
         state.on_scroll = self.on_scroll;
 
+        let root = element.root;
         let (mut parent, contents) = element.contents_mut();
-        let widget = WidgetMut::new(&mut parent, contents);
+        let widget = WidgetMut::new(root, &mut parent, contents);
 
         self.contents.rebuild(widget, &mut state.state, cx, data);
     }
@@ -138,8 +139,9 @@ where
             return (state.on_scroll)(data, scroll);
         }
 
+        let root = element.root;
         let (mut parent, contents) = element.contents_mut();
-        let widget = WidgetMut::new(&mut parent, contents);
+        let widget = WidgetMut::new(root, &mut parent, contents);
 
         V::message(
             widget,

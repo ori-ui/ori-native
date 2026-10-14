@@ -72,6 +72,7 @@ where
         data: &mut T,
     ) {
         let widget = WidgetMut::new(
+            element.root,
             element.parent,
             element.widget.contents(),
         );
@@ -92,6 +93,7 @@ where
         }
 
         let widget = WidgetMut::new(
+            element.root,
             element.parent,
             element.widget.contents(),
         );
