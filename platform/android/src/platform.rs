@@ -47,6 +47,10 @@ impl Platform {
         })
     }
 
+    pub(crate) fn runtime(&self) -> &tokio::runtime::Runtime {
+        &self.runtime
+    }
+
     pub fn recreate(&mut self, state: &GlobalState) {
         debug_assert!(self.handlers.is_empty());
 

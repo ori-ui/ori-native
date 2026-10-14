@@ -77,6 +77,8 @@ impl Application {
         app.activate();
 
         glib::MainContext::default().block_on(async {
+            let _guard = state.context.platform.proxy.runtime.enter();
+
             while state.running
                 && let Some(event) = receiver.recv().await
             {

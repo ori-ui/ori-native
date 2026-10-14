@@ -120,8 +120,8 @@ impl Proxied for Platform {
 
 #[derive(Clone)]
 pub struct Gtk4Proxy {
-    sender:  UnboundedSender<Event>,
-    runtime: Arc<tokio::runtime::Runtime>,
+    pub(crate) sender:  UnboundedSender<Event>,
+    pub(crate) runtime: Arc<tokio::runtime::Runtime>,
 }
 
 impl Proxy for Gtk4Proxy {

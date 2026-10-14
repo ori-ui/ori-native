@@ -77,6 +77,8 @@ impl Application {
             receiver: &mut receiver,
         };
 
+        let _guard = state.context.platform.runtime().enter();
+
         while state.running
             && let Ok(event) = state.receiver.recv()
         {
