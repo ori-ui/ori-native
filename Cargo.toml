@@ -45,7 +45,8 @@ features = ["flexbox", "grid", "content_size", "taffy_tree"]
 
 [workspace.dependencies.tokio]
 version = "1"
-features = ["rt-multi-thread"]
+default-features = false
+features = ["time", "rt-multi-thread"]
 
 [features]
 layer-shell  = ["ori-native-gtk4/layer-shell"]
