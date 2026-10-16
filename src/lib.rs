@@ -45,10 +45,10 @@ pub mod views {
     pub use ori::views::*;
     pub use ori_native_core::views::*;
 
-    #[cfg(feature = "layer-shell")]
+    #[cfg(all(feature = "layer-shell", platform = "gtk4"))]
     pub use ori_native_gtk4::{ExclusiveZone, KeyboardInput, Layer, LayerShell, layer_shell};
 
-    #[cfg(feature = "session-lock")]
+    #[cfg(all(feature = "session-lock", platform = "gtk4"))]
     pub use ori_native_gtk4::{SessionLock, session_lock};
 }
 
