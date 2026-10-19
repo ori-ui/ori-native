@@ -2,6 +2,7 @@ mod bars;
 mod color;
 mod corners;
 mod layout;
+mod outline;
 mod overflow;
 mod popup;
 mod shadow;
@@ -16,6 +17,7 @@ pub use layout::{
     Align, BorderStyle, Direction, FlexStyle, Fract, Justify, LayoutStyle, Length, Point, Position,
     Sides, Size, StyleBorder, StyleFlexContainer, StyleLayout, StylePadding,
 };
+pub use outline::{OutlineStyle, StyleOutline};
 pub use overflow::Overflow;
 pub use popup::{PopupPosition, Side};
 pub use shadow::{Shadow, StyleShadow};

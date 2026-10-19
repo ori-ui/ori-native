@@ -5,16 +5,9 @@ struct Data {
 }
 
 fn ui(data: &Data) -> impl Effect<Data> + use<> {
-    let button = pressable(|_, state| {
-        if state.pressed {
-            text("Pressed!")
-        } else if state.hovered {
-            text("Hovered!")
-        } else {
-            text("Press me!")
-        }
-    })
-    .on_press(|data: &mut Data, _| data.count += 1);
+    let button = button(text("Press me!"), |data: &mut Data| {
+        data.count += 1;
+    });
 
     let label = text(format!("Pressed {} times.", data.count));
 

@@ -59,7 +59,7 @@ fn modal_button() -> impl View<Data> + use<> {
                     .corner(12.0)
                     .shadow(16.0, 16.0, 20.0, Color::BLACK.fade(0.4))
             })
-            .on_blur(|(open, _): &mut (bool, _)| *open = false),
+            .on_press(|(open, _): &mut (bool, _), _| *open = false),
         )
         .justify_content(Justify::Center)
         .align_items(Align::Center)
@@ -82,6 +82,8 @@ fn modal_button() -> impl View<Data> + use<> {
                         .padding(12.0)
                         .border(1.0, Color::BLACK)
                         .corner(12.0)
+                        .outline(2.0, Color::RED)
+                        .outline_offset(5.0)
                 }),
                 open.then(|| teleport(MODAL, modal())),
             )

@@ -1,5 +1,5 @@
 use jni::{jni_sig, jni_str};
-use ori_native_core::{Color, Corners, Overflow, Shadow, Sides, native::NativeGroup};
+use ori_native_core::{Color, Corners, OutlineStyle, Overflow, Shadow, Sides, native::NativeGroup};
 
 use crate::{Platform, platform::WidgetId};
 
@@ -167,6 +167,46 @@ impl NativeGroup<Platform> for Group {
                     width.right.into(),
                     width.bottom.into(),
                     width.left.into(),
+                ],
+            )?
+            .v()
+        });
+    }
+
+    fn set_outline(&mut self, platform: &mut Platform, outline: OutlineStyle) {
+        let _ = platform.jni(|env, activity| {
+            env.call_method(
+                activity,
+                jni_str!("groupSetOutline"),
+                jni_sig!((
+                    long,
+                    float,
+                    float,
+                    float,
+                    float,
+                    float,
+                    float,
+                    float,
+                    float,
+                    float,
+                    float,
+                    float,
+                    float,
+                ) -> void),
+                &[
+                    self.id.into(),
+                    outline.color.r.into(),
+                    outline.color.g.into(),
+                    outline.color.b.into(),
+                    outline.color.a.into(),
+                    outline.width.top.into(),
+                    outline.width.right.into(),
+                    outline.width.bottom.into(),
+                    outline.width.left.into(),
+                    outline.offset.top.into(),
+                    outline.offset.right.into(),
+                    outline.offset.bottom.into(),
+                    outline.offset.left.into(),
                 ],
             )?
             .v()

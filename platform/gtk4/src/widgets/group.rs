@@ -1,6 +1,6 @@
 use glib::{object::Cast, subclass::types::ObjectSubclassIsExt};
 use gtk4::prelude::WidgetExt;
-use ori_native_core::{Color, Corners, Overflow, Shadow, Sides, native::NativeGroup};
+use ori_native_core::{Color, Corners, OutlineStyle, Overflow, Shadow, Sides, native::NativeGroup};
 
 use crate::Platform;
 
@@ -101,6 +101,20 @@ impl NativeGroup<Platform> for Group {
         self.queue_draw();
     }
 
+    fn set_outline(&mut self, _platform: &mut Platform, outline: OutlineStyle) {
+        let color = gdk4::RGBA::new(
+            outline.color.r,
+            outline.color.g,
+            outline.color.b,
+            outline.color.a,
+        );
+
+        self.imp().outline_color.set(color);
+        self.imp().outline_width.set(outline.width.into());
+        self.imp().outline_offset.set(outline.offset.into());
+        self.queue_draw();
+    }
+
     fn set_corners(&mut self, _platform: &mut Platform, corners: Corners<f32>) {
         self.imp().corner_radii.set(corners.into());
         self.queue_draw();
@@ -197,8 +211,11 @@ mod imp {
 
         pub(super) background_color: Cell<gdk4::RGBA>,
         pub(super) border_color:     Cell<gdk4::RGBA>,
+        pub(super) outline_color:    Cell<gdk4::RGBA>,
         pub(super) corner_radii:     Cell<[f32; 4]>,
         pub(super) border_width:     Cell<[f32; 4]>,
+        pub(super) outline_width:    Cell<[f32; 4]>,
+        pub(super) outline_offset:   Cell<[f32; 4]>,
         pub(super) overflow:         Cell<Overflow>,
         pub(super) shadow:           Cell<Shadow>,
     }
@@ -216,8 +233,11 @@ mod imp {
 
                 background_color: Cell::new(gdk4::RGBA::TRANSPARENT),
                 border_color:     Cell::new(gdk4::RGBA::TRANSPARENT),
+                outline_color:    Cell::new(gdk4::RGBA::TRANSPARENT),
                 corner_radii:     Cell::new([0.0; 4]),
                 border_width:     Cell::new([0.0; 4]),
+                outline_width:    Cell::new([0.0; 4]),
+                outline_offset:   Cell::new([0.0; 4]),
                 overflow:         Cell::new(Overflow::Visible),
                 shadow:           Cell::new(Shadow::default()),
             }
@@ -274,6 +294,30 @@ mod imp {
                 );
             }
 
+            if self.outline_color.get().alpha() != 0.0 {
+                let [to, ro, bo, lo] = self.outline_offset.get();
+                let [tw, rw, bw, lw] = self.outline_width.get();
+
+                let rect = gsk4::RoundedRect::new(
+                    graphene::Rect::new(
+                        0.0 - lo - lw,
+                        0.0 - to - tw,
+                        self.obj().width() as f32 + lo + lw + ro + rw,
+                        self.obj().height() as f32 + to + tw + bo + bw,
+                    ),
+                    graphene::Size::new(tl, tl),
+                    graphene::Size::new(tr, tr),
+                    graphene::Size::new(br, br),
+                    graphene::Size::new(bl, bl),
+                );
+
+                snapshot.append_border(
+                    &rect,
+                    &self.outline_width.get(),
+                    &[self.outline_color.get(); 4],
+                );
+            }
+
             snapshot.push_rounded_clip(&rect);
 
             snapshot.append_color(
@@ -281,11 +325,13 @@ mod imp {
                 rect.bounds(),
             );
 
-            snapshot.append_border(
-                &rect,
-                &self.border_width.get(),
-                &[self.border_color.get(); 4],
-            );
+            if self.border_color.get().alpha() != 0.0 {
+                snapshot.append_border(
+                    &rect,
+                    &self.border_width.get(),
+                    &[self.border_color.get(); 4],
+                );
+            }
 
             if let Overflow::Visible = self.overflow.get() {
                 snapshot.pop();

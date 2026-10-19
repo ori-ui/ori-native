@@ -3,12 +3,13 @@ use std::rc::Rc;
 use keyboard_types::{Modifiers, NamedKey};
 use ori::{
     Action, Builder, BuilderMarker, ViewId,
-    views::{maybe, with, without},
+    views::{maybe_seq, with, without},
 };
 
 use crate::{
     BorderStyle, BoxedWidget, Color, Context, Corners, FlexStyle, LayoutStyle, Length, Platform,
-    Sides, StyleBorder, StyleCorners, StyleFlexContainer, StyleLayout, StylePadding, WidgetView,
+    Sides, StyleBorder, StyleCorners, StyleFlexContainer, StyleLayout, StyleOutline, StylePadding,
+    WidgetView, WidgetViewSeq,
     views::{Ease, Transition, pressable, row, transition},
 };
 
@@ -39,8 +40,8 @@ pub struct Button<V, F> {
     focusable:  bool,
     auto_focus: bool,
 
-    border:         BorderStyle,
-    border_focused: Color,
+    border:          BorderStyle,
+    outline_focused: Color,
 }
 
 impl<V, F> Button<V, F> {
@@ -64,11 +65,8 @@ impl<V, F> Button<V, F> {
             focusable: true,
             auto_focus: false,
 
-            border: BorderStyle {
-                color: Color::TRANSPARENT,
-                width: Sides::all(Length::Length(2.0)),
-            },
-            border_focused: Color::hex("#1a45bc"),
+            border: BorderStyle::default(),
+            outline_focused: Color::hex("#1a45bc"),
         }
     }
 
@@ -149,7 +147,7 @@ impl<V, F> BuilderMarker for Button<V, F> {}
 impl<P, T, V, F, A> Builder<Context<P>, T> for Button<V, F>
 where
     P: Platform,
-    V: WidgetView<P, T>,
+    V: WidgetViewSeq<P, T>,
     F: FnMut(&mut T) -> A,
     A: Into<Action>,
 {
@@ -183,27 +181,28 @@ where
                             self.color
                         };
 
-                        let border_color = if press_state.focused {
-                            self.border_focused
+                        let outline = if press_state.focused {
+                            self.outline_focused
                         } else {
-                            self.border.color
+                            Color::TRANSPARENT
                         };
 
                         let mut contents = contents.take();
 
                         transition(
-                            (color, border_color),
+                            (color, outline),
                             trans.clone(),
-                            move |_, (color, border_color)| {
-                                let mut row = row(without(maybe(contents.take())))
-                                    .set_layout(self.layout)
-                                    .padding(self.padding)
-                                    .corner(self.corners)
-                                    .background(color)
-                                    .border(self.border.width, border_color);
-
-                                *row.get_flex_style_mut() = self.flex;
-                                row
+                            move |_, (color, outline)| {
+                                without(
+                                    row(maybe_seq(contents.take()))
+                                        .set_flex(self.flex)
+                                        .set_layout(self.layout)
+                                        .set_border(self.border)
+                                        .padding(self.padding)
+                                        .corner(self.corners)
+                                        .background(color)
+                                        .outline(2.0, outline),
+                                )
                             },
                         )
                     },

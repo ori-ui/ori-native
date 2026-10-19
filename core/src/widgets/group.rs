@@ -4,8 +4,8 @@ use ori::{Element, Elements, Mut, ViewId};
 
 use crate::{
     Allocation, BorderStyle, BoxedWidget, Color, Context, Corners, FlexStyle, LayoutNode,
-    LayoutStyle, Length, Overflow, Parent, Platform, Shadow, Sides, Size, Widget, WidgetMut,
-    native::NativeGroup,
+    LayoutStyle, Length, OutlineStyle, Overflow, Parent, Platform, Shadow, Sides, Size, Widget,
+    WidgetMut, native::NativeGroup,
 };
 
 /// A utility wrapper for a [`NativeGroup`], maintaining an [`Elements`].
@@ -94,6 +94,11 @@ where
     pub fn set_border(&mut self, cx: &mut Context<P>, border: BorderStyle) {
         self.native.set_border_color(&mut cx.platform, border.color);
         cx.layout.set_border(self.layout, border);
+    }
+
+    /// Set the [`OutlineStyle`].
+    pub fn set_outline(&mut self, cx: &mut Context<P>, outline: OutlineStyle) {
+        self.native.set_outline(&mut cx.platform, outline);
     }
 
     /// Set the `padding`.

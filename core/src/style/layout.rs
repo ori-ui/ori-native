@@ -127,6 +127,23 @@ impl<T> Sides<T> {
     }
 }
 
+impl From<f32> for Sides<f32> {
+    fn from(value: f32) -> Self {
+        Self::all(value)
+    }
+}
+
+impl From<(f32, f32, f32, f32)> for Sides<f32> {
+    fn from((top, right, bottom, left): (f32, f32, f32, f32)) -> Self {
+        Self {
+            top,
+            right,
+            bottom,
+            left,
+        }
+    }
+}
+
 impl<T> From<T> for Sides<Length>
 where
     T: Into<Length>,

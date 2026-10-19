@@ -37,9 +37,9 @@ pub use resources::Resources;
 pub use safearea::SafeAreaInsets;
 pub use style::{
     Affine, Align, BorderStyle, Color, Corners, Direction, FlexStyle, Fract, Justify, LayoutStyle,
-    Length, NavigationBar, Newline, Overflow, Point, PopupPosition, Position, Shadow, Side, Sides,
-    Size, Sizing, StatusBar, StyleBorder, StyleCorners, StyleFlexContainer, StyleLayout,
-    StylePadding, StyleShadow, Submit,
+    Length, NavigationBar, Newline, OutlineStyle, Overflow, Point, PopupPosition, Position, Shadow,
+    Side, Sides, Size, Sizing, StatusBar, StyleBorder, StyleCorners, StyleFlexContainer,
+    StyleLayout, StyleOutline, StylePadding, StyleShadow, Submit,
 };
 pub use text::{Font, Stretch, TextAlign, TextSpan, TextWrap, Weight};
 pub use widget::{

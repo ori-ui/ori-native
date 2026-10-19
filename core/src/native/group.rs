@@ -1,5 +1,6 @@
 use crate::{
-    Color, Corners, Overflow, Platform, Shadow, Sides, Unsupported, platform::unsupported,
+    Color, Corners, OutlineStyle, Overflow, Platform, Shadow, Sides, Unsupported,
+    platform::unsupported,
 };
 
 /// A native group widget.
@@ -49,6 +50,9 @@ where
 
     /// Set the sidewise `widths` of the border.
     fn set_border_width(&mut self, platform: &mut P, widths: Sides<f32>);
+
+    /// Set the outline.
+    fn set_outline(&mut self, platform: &mut P, outline: OutlineStyle);
 
     /// Set the radii of each corner.
     fn set_corners(&mut self, platform: &mut P, corners: Corners<f32>);
@@ -121,6 +125,10 @@ where
     }
 
     fn set_border_width(&mut self, _platform: &mut P, _width: Sides<f32>) {
+        unreachable!()
+    }
+
+    fn set_outline(&mut self, _platform: &mut P, _outline: OutlineStyle) {
         unreachable!()
     }
 

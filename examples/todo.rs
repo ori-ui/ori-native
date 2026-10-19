@@ -111,25 +111,26 @@ fn todo(index: usize, todo: &Todo) -> impl View<Data> + use<> {
         text(&todo.name).color(theme::TEXT)
     };
 
-    let view = button(
-        row((
-            done(todo),
-            name.flex(1.0),
-            remove(index),
-        ))
-        .gap(8.0)
-        .padding(8.0)
+    let view = on_layout(
+        button(
+            (
+                done(todo),
+                name.flex(1.0),
+                remove(index),
+            ),
+            |todo: &mut Todo| todo.done = !todo.done,
+        )
         .border_top_width(if index > 0 { 1.0 } else { 0.0 })
         .border_color(theme::BORDER)
         .justify_content(Justify::SpaceBetween)
         .align_items(Align::Center)
-        .min_width(0.0)
-        .flex(1.0),
-        |todo: &mut Todo| todo.done = !todo.done,
-    )
-    .padding(0.0)
-    .color(Color::TRANSPARENT)
-    .color_hovered(Color::BLACK.fade(0.1));
+        .color(Color::TRANSPARENT)
+        .color_hovered(Color::BLACK.fade(0.1))
+        .flex(1.0)
+        .gap(8.0)
+        .padding(8.0),
+        |_, w, h| debug!(w, h),
+    );
 
     map(view, move |data: &mut Data, map| {
         map(&mut data.todos[index])

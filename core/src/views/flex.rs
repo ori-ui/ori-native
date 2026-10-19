@@ -1,9 +1,9 @@
 use ori::{Action, Message, Mut, View, ViewMarker};
 
 use crate::{
-    BorderStyle, Color, Context, Corners, Direction, FlexStyle, LayoutStyle, Length, Overflow,
-    Platform, Shadow, Sides, StyleBorder, StyleCorners, StyleFlexContainer, StyleLayout,
-    StylePadding, StyleShadow, WidgetViewSeq, widgets::GroupWidget,
+    BorderStyle, Color, Context, Corners, Direction, FlexStyle, LayoutStyle, Length, OutlineStyle,
+    Overflow, Platform, Shadow, Sides, StyleBorder, StyleCorners, StyleFlexContainer, StyleLayout,
+    StyleOutline, StylePadding, StyleShadow, WidgetViewSeq, widgets::GroupWidget,
 };
 
 /// Container [`View`] with flexbox layout.
@@ -26,6 +26,7 @@ pub struct Flex<V> {
     contents:       V,
     layout:         LayoutStyle,
     border:         BorderStyle,
+    outline:        OutlineStyle,
     padding:        Sides<Length>,
     flex:           FlexStyle,
     background:     Color,
@@ -42,6 +43,7 @@ impl<V> Flex<V> {
             contents,
             layout: LayoutStyle::default(),
             border: BorderStyle::default(),
+            outline: OutlineStyle::default(),
             padding: Sides::all(Length::Length(0.0)),
             flex: FlexStyle::default(),
             background: Color::TRANSPARENT,
@@ -87,6 +89,12 @@ impl<V> StyleBorder for Flex<V> {
     }
 }
 
+impl<V> StyleOutline for Flex<V> {
+    fn get_outline_style_mut(&mut self) -> &mut OutlineStyle {
+        &mut self.outline
+    }
+}
+
 impl<V> StylePadding for Flex<V> {
     fn get_padding_mut(&mut self) -> &mut Sides<Length> {
         &mut self.padding
@@ -125,6 +133,7 @@ where
         group.set_layout(cx, self.layout);
         group.set_padding(cx, self.padding);
         group.set_border(cx, self.border);
+        group.set_outline(cx, self.outline);
         group.set_flex(cx, self.flex);
         group.set_background(cx, self.background);
         group.set_corners(cx, self.corners);
@@ -138,6 +147,7 @@ where
             state,
             layout: self.layout,
             border: self.border,
+            outline: self.outline,
             padding: self.padding,
             overflow: self.overflow,
             flex: self.flex,
@@ -187,6 +197,11 @@ where
         if state.border != self.border {
             state.border = self.border;
             element.set_border(cx, self.border);
+        }
+
+        if state.outline != self.outline {
+            state.outline = self.outline;
+            element.set_outline(cx, self.outline);
         }
 
         if state.background != self.background {
@@ -245,6 +260,7 @@ where
     state:          V::State,
     layout:         LayoutStyle,
     border:         BorderStyle,
+    outline:        OutlineStyle,
     flex:           FlexStyle,
     padding:        Sides<Length>,
     overflow:       Overflow,
