@@ -4,7 +4,7 @@ use ori::{Element, ViewId};
 
 use crate::{
     Allocation, Context, Direction, FlexStyle, LayoutNode, LayoutStyle, Length, Overflow, Parent,
-    Platform, Position, Sides, Size, Widget, WidgetMut,
+    Platform, Sides, Size, Widget, WidgetMut,
     native::{NativeGroup, NativeScroll},
 };
 
@@ -519,7 +519,6 @@ where
         };
 
         LayoutStyle {
-            position: Position::Absolute,
             inset,
             ..Default::default()
         }

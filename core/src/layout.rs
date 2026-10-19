@@ -398,8 +398,6 @@ impl<P> LayoutTree<P> {
 
     /// Replace `node` with `other`.
     pub fn replace_node(&mut self, node: LayoutNode, other: LayoutNode) {
-        self.request_layout(node);
-
         if let Some(state) = self.nodes.get(&node.0)
             && let Some(parent) = state.parent
             && let Some(parent) = self.nodes.get_mut(&parent)
@@ -407,31 +405,57 @@ impl<P> LayoutTree<P> {
         {
             *child = other.0;
         }
+
+        self.request_layout(other);
     }
 
     /// Remove a layout node.
     pub fn remove_node(&mut self, node: LayoutNode) {
-        fn remove_node<T>(tree: &mut LayoutTree<T>, node: u64) {
-            if let Some(node) = tree.nodes.remove(&node) {
-                for child in node.children {
-                    remove_node(tree, child)
-                }
-            }
+        let Some(removed) = self.nodes.remove(&node.0) else {
+            return;
+        };
 
-            tree.roots.remove(&node);
+        if let Some(parent) = removed.parent
+            && let _ = self.request_layout(LayoutNode(parent))
+            && let Some(parent) = self.nodes.get_mut(&parent)
+        {
+            parent.children.retain(|child| *child != node.0);
         }
 
-        self.request_layout(node);
-        remove_node(self, node.0);
+        for child in removed.children {
+            if let Some(child) = self.nodes.get_mut(&child) {
+                child.parent = None;
+            }
+        }
     }
 
     /// Remove the child at `index` from a layout node.
-    pub fn remove_child(&mut self, node: LayoutNode, index: usize) {
-        self.request_layout(node);
+    pub fn remove_child(&mut self, node: LayoutNode, index: usize) -> Option<LayoutNode> {
+        let child = self
+            .nodes
+            .get_mut(&node.0)
+            .map(|node| node.children.remove(index));
 
-        if let Some(node) = self.nodes.get_mut(&node.0) {
-            node.children.remove(index);
+        if let Some(child) = child
+            && let Some(node) = self.nodes.get_mut(&child)
+        {
+            node.parent = None;
         }
+
+        self.request_layout(node);
+        child.map(LayoutNode)
+    }
+
+    /// Remove the parent of `node`.
+    pub fn remove_parent(&mut self, node: LayoutNode) -> Option<LayoutNode> {
+        let parent = self.nodes.get_mut(&node.0)?.parent.take()?;
+
+        if let Some(parent) = self.nodes.get_mut(&parent) {
+            parent.children.retain(|child| *child != node.0);
+        }
+
+        self.request_layout(LayoutNode(parent));
+        Some(LayoutNode(parent))
     }
 
     /// Set the layout style of a layout node.
@@ -665,7 +689,7 @@ impl<P> LayoutView<'_, P> {
         self.layout
             .nodes
             .get(&node_id.into())
-            .expect("`node_id` should always be valid ")
+            .unwrap_or_else(|| panic!("`node_id` should always be valid, {node_id:?}"))
     }
 
     #[track_caller]
@@ -673,7 +697,7 @@ impl<P> LayoutView<'_, P> {
         self.layout
             .nodes
             .get_mut(&node_id.into())
-            .expect("`node_id` should always be valid ")
+            .unwrap_or_else(|| panic!("`node_id` should always be valid, {node_id:?}"))
     }
 }
 
@@ -804,14 +828,21 @@ where
                     );
 
                     output.baselines.first = baseline;
+
                     return output;
                 }
 
-                match node.style.display {
+                let mut output = match node.style.display {
                     taffy::Display::None => taffy::compute_hidden_layout(tree, node_id),
                     taffy::Display::Flex => taffy::compute_flexbox_layout(tree, node_id, inputs),
                     taffy::Display::Grid => taffy::compute_grid_layout(tree, node_id, inputs),
+                };
+
+                if inputs.run_mode == taffy::RunMode::PerformLayout {
+                    taffy::compute_oof_layout(tree, node_id, &mut output);
                 }
+
+                output
             },
         )
     }
@@ -894,11 +925,7 @@ impl<P> taffy::TraverseTree for LayoutView<'_, P> {}
 
 impl<P> taffy::RoundTree for LayoutView<'_, P> {
     fn get_unrounded_layout(&self, node_id: taffy::NodeId) -> taffy::Layout {
-        let node = self
-            .layout
-            .nodes
-            .get(&node_id.into())
-            .expect("`node_id` should always be valid ");
+        let node = self.node(node_id);
 
         let mut layout = node.unrounded;
         scale_taffy_layout(&mut layout, self.scale);
@@ -906,14 +933,11 @@ impl<P> taffy::RoundTree for LayoutView<'_, P> {
     }
 
     fn set_final_layout(&mut self, node_id: taffy::NodeId, layout: &taffy::Layout) {
-        let node = self
-            .layout
-            .nodes
-            .get_mut(&node_id.into())
-            .expect("`node_id` should always be valid ");
+        let scale_inverse = self.scale_inverse;
+        let node = self.node_mut(node_id);
 
         let mut layout = *layout;
-        scale_taffy_layout(&mut layout, self.scale_inverse);
+        scale_taffy_layout(&mut layout, scale_inverse);
         node.rounded = layout;
     }
 

@@ -219,7 +219,7 @@ where
         child.element.set_root(cx, None);
 
         (self.parent.native).remove_child(&mut cx.platform, self.parent.index);
-        (cx.layout).remove_child(self.parent.layout, self.parent.index);
+        (cx.layout).remove_parent(child.element.layout_node());
 
         Some(child.element)
     }
