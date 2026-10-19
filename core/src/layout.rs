@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     convert::Infallible,
+    hash::BuildHasherDefault,
     sync::Arc,
 };
 
@@ -138,9 +139,9 @@ pub struct LayoutNode(u64);
 pub struct LayoutTree<P> {
     proxy:     Arc<dyn Proxy>,
     next:      u64,
-    nodes:     HashMap<u64, Node<P>>,
-    roots:     HashMap<u64, ViewId>,
-    requested: HashSet<ViewId>,
+    nodes:     HashMap<u64, Node<P>, BuildHasherDefault<seahash::SeaHasher>>,
+    roots:     HashMap<u64, ViewId, BuildHasherDefault<seahash::SeaHasher>>,
+    requested: HashSet<ViewId, BuildHasherDefault<seahash::SeaHasher>>,
 }
 
 struct Node<P> {
@@ -151,6 +152,7 @@ struct Node<P> {
     rounded:    taffy::Layout,
     parent:     Option<u64>,
     children:   Vec<u64>,
+    hoisted:    Vec<u64>,
 }
 
 impl<P> LayoutTree<P> {
@@ -159,9 +161,9 @@ impl<P> LayoutTree<P> {
         Self {
             proxy,
             next: 0,
-            nodes: HashMap::new(),
-            roots: HashMap::new(),
-            requested: HashSet::new(),
+            nodes: HashMap::default(),
+            roots: HashMap::default(),
+            requested: HashSet::default(),
         }
     }
 
@@ -298,6 +300,7 @@ impl<P> LayoutTree<P> {
                 rounded:    Default::default(),
                 parent:     None,
                 children:   Vec::new(),
+                hoisted:    Vec::new(),
             },
         );
 
@@ -326,6 +329,7 @@ impl<P> LayoutTree<P> {
                 rounded:    Default::default(),
                 parent:     None,
                 children:   Vec::new(),
+                hoisted:    Vec::new(),
             },
         );
 
@@ -545,8 +549,8 @@ impl<P> LayoutTree<P> {
             height: Self::into_length(flex.gap.height),
         };
 
-        layout.style.justify_content = flex.justify_content.map(Self::into_justify);
-        layout.style.align_items = flex.align_items.map(Self::into_align);
+        layout.style.justify_content = Self::into_justify(flex.justify_content);
+        layout.style.align_items = Self::into_align(flex.align_items);
 
         self.request_layout(node);
     }
@@ -655,6 +659,24 @@ struct LayoutView<'a, P> {
     layout:        &'a mut LayoutTree<P>,
 }
 
+impl<P> LayoutView<'_, P> {
+    #[track_caller]
+    fn node(&self, node_id: taffy::NodeId) -> &Node<P> {
+        self.layout
+            .nodes
+            .get(&node_id.into())
+            .expect("`node_id` should always be valid ")
+    }
+
+    #[track_caller]
+    fn node_mut(&mut self, node_id: taffy::NodeId) -> &mut Node<P> {
+        self.layout
+            .nodes
+            .get_mut(&node_id.into())
+            .expect("`node_id` should always be valid ")
+    }
+}
+
 impl<P> taffy::TraversePartialTree for LayoutView<'_, P> {
     type ChildIter<'a>
         = ChildIter<'a>
@@ -662,28 +684,16 @@ impl<P> taffy::TraversePartialTree for LayoutView<'_, P> {
         Self: 'a;
 
     fn child_ids(&self, parent_node_id: taffy::NodeId) -> Self::ChildIter<'_> {
-        let node = self
-            .layout
-            .nodes
-            .get(&parent_node_id.into())
-            .expect("`parent_node_id` should always be valid ");
-
+        let node = self.node(parent_node_id);
         ChildIter(node.children.iter())
     }
 
     fn child_count(&self, parent_node_id: taffy::NodeId) -> usize {
-        self.layout
-            .nodes
-            .get(&parent_node_id.into())
-            .map_or(0, |node| node.children.len())
+        self.node(parent_node_id).children.len()
     }
 
     fn get_child_id(&self, parent_node_id: taffy::NodeId, child_index: usize) -> taffy::NodeId {
-        let node = self
-            .layout
-            .nodes
-            .get(&parent_node_id.into())
-            .expect("`parent_node_id` should always be valid ");
+        let node = self.node(parent_node_id);
 
         node.children
             .get(child_index)
@@ -699,7 +709,7 @@ impl<P> taffy::CacheTree for LayoutView<'_, P> {
         node_id: taffy::NodeId,
         input: &taffy::LayoutInput,
     ) -> Option<taffy::LayoutOutput> {
-        let node = self.layout.nodes.get_mut(&node_id.into())?;
+        let node = self.node_mut(node_id);
         node.cache.get(input)
     }
 
@@ -709,15 +719,13 @@ impl<P> taffy::CacheTree for LayoutView<'_, P> {
         input: &taffy::LayoutInput,
         layout_output: taffy::LayoutOutput,
     ) {
-        if let Some(node) = self.layout.nodes.get_mut(&node_id.into()) {
-            node.cache.store(input, layout_output);
-        }
+        let node = self.node_mut(node_id);
+        node.cache.store(input, layout_output);
     }
 
     fn cache_clear(&mut self, node_id: taffy::NodeId) {
-        if let Some(node) = self.layout.nodes.get_mut(&node_id.into()) {
-            node.cache.clear();
-        }
+        let node = self.node_mut(node_id);
+        node.cache.clear();
     }
 }
 
@@ -733,22 +741,11 @@ where
     type CustomIdent = String;
 
     fn get_core_container_style(&self, node_id: taffy::NodeId) -> Self::CoreContainerStyle<'_> {
-        let node = self
-            .layout
-            .nodes
-            .get(&node_id.into())
-            .expect("`node_id` should always be valid ");
-
-        &node.style
+        &self.node(node_id).style
     }
 
     fn set_unrounded_layout(&mut self, node_id: taffy::NodeId, layout: &taffy::Layout) {
-        let node = self
-            .layout
-            .nodes
-            .get_mut(&node_id.into())
-            .expect("`node_id` should always be valid ");
-
+        let node = self.node_mut(node_id);
         node.unrounded = *layout;
     }
 
@@ -820,6 +817,30 @@ where
     }
 }
 
+impl<P> taffy::LayoutContainingBlock for LayoutView<'_, P>
+where
+    P: Platform,
+{
+    type OofItemStyle<'a>
+        = &'a taffy::Style
+    where
+        Self: 'a;
+
+    fn get_oof_item_style(&self, node_id: taffy::NodeId) -> Self::OofItemStyle<'_> {
+        &self.node(node_id).style
+    }
+
+    fn clear_hoisted_children(&mut self, node_id: taffy::NodeId) {
+        self.node_mut(node_id).hoisted.clear();
+    }
+
+    fn add_hoisted_children(&mut self, node_id: taffy::NodeId, hoisted: &[taffy::NodeId]) {
+        self.node_mut(node_id)
+            .hoisted
+            .extend(hoisted.iter().copied().map(u64::from));
+    }
+}
+
 impl<P> taffy::LayoutFlexboxContainer for LayoutView<'_, P>
 where
     P: Platform,
@@ -838,23 +859,11 @@ where
         &self,
         node_id: taffy::NodeId,
     ) -> Self::FlexboxContainerStyle<'_> {
-        let node = self
-            .layout
-            .nodes
-            .get(&node_id.into())
-            .expect("`node_id` should always be valid ");
-
-        &node.style
+        &self.node(node_id).style
     }
 
     fn get_flexbox_child_style(&self, child_node_id: taffy::NodeId) -> Self::FlexboxItemStyle<'_> {
-        let node = self
-            .layout
-            .nodes
-            .get(&child_node_id.into())
-            .expect("`child_node_id` should always be valid ");
-
-        &node.style
+        &self.node(child_node_id).style
     }
 }
 
@@ -873,23 +882,11 @@ where
         Self: 'a;
 
     fn get_grid_container_style(&self, node_id: taffy::NodeId) -> Self::GridContainerStyle<'_> {
-        let node = self
-            .layout
-            .nodes
-            .get(&node_id.into())
-            .expect("`node_id` should always be valid ");
-
-        &node.style
+        &self.node(node_id).style
     }
 
     fn get_grid_child_style(&self, child_node_id: taffy::NodeId) -> Self::GridItemStyle<'_> {
-        let node = self
-            .layout
-            .nodes
-            .get(&child_node_id.into())
-            .expect("`child_node_id` should always be valid ");
-
-        &node.style
+        &self.node(child_node_id).style
     }
 }
 
@@ -918,6 +915,18 @@ impl<P> taffy::RoundTree for LayoutView<'_, P> {
         let mut layout = *layout;
         scale_taffy_layout(&mut layout, self.scale_inverse);
         node.rounded = layout;
+    }
+
+    fn is_out_of_flow(&self, node_id: taffy::NodeId) -> bool {
+        self.node(node_id).style.position.is_out_of_flow()
+    }
+
+    fn hoisted_child_count(&self, node_id: taffy::NodeId) -> usize {
+        self.node(node_id).hoisted.len()
+    }
+
+    fn get_hoisted_child_id(&self, node_id: taffy::NodeId, index: usize) -> taffy::NodeId {
+        self.node(node_id).hoisted[index].into()
     }
 }
 

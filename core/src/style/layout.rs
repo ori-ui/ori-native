@@ -321,10 +321,10 @@ pub struct FlexStyle {
     pub wrap: bool,
 
     /// The justification strategy.
-    pub justify_content: Option<Justify>,
+    pub justify_content: Justify,
 
     /// The alignment strategy of iems.
-    pub align_items: Option<Align>,
+    pub align_items: Align,
 
     /// The gap between items.
     pub gap: Size<Length>,
@@ -336,8 +336,8 @@ impl Default for FlexStyle {
             direction:       Direction::Horizontal,
             reverse:         false,
             wrap:            false,
-            justify_content: None,
-            align_items:     None,
+            justify_content: Justify::Start,
+            align_items:     Align::Stretch,
             gap:             Size::all(Length::Length(0.0)),
         }
     }
@@ -652,14 +652,14 @@ pub trait StyleFlexContainer: Sized {
     }
 
     /// Set how contents are justified within the container.
-    fn justify_content(mut self, justify: impl Into<Option<Justify>>) -> Self {
-        self.get_flex_style_mut().justify_content = justify.into();
+    fn justify_content(mut self, justify: Justify) -> Self {
+        self.get_flex_style_mut().justify_content = justify;
         self
     }
 
     /// Set how items are aligned within the container.
-    fn align_items(mut self, align: impl Into<Option<Align>>) -> Self {
-        self.get_flex_style_mut().align_items = align.into();
+    fn align_items(mut self, align: Align) -> Self {
+        self.get_flex_style_mut().align_items = align;
         self
     }
 

@@ -172,8 +172,8 @@ where
 
                 self.native.set_content_layout(
                     &mut cx.platform,
-                    allocation.x + allocation.margin.left,
-                    allocation.y + allocation.margin.top,
+                    allocation.x,
+                    allocation.y,
                     allocation.size.width,
                     allocation.size.height,
                 );

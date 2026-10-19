@@ -39,7 +39,7 @@ git = "https://github.com/ori-ui/ori"
 features = ["tracing"]
 
 [workspace.dependencies.taffy]
-version = "0.14"
+version = "0.15"
 default-features = false
 features = ["flexbox", "grid", "content_size", "taffy_tree"]
 
