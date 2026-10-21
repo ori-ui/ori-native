@@ -40,15 +40,16 @@ pub fn my_button<T>(
     #[padding]
     padding: Sides<Length>,
 
-    #[default = BorderStyle {
-        color: Color::TRANSPARENT,
-        width: Sides::from(2.0),
+    #[default = OutlineStyle {
+        width: Sides::all(2.0),
+        ..Default::default()
     }]
-    #[border]
-    border: BorderStyle,
+    #[outline]
+    outline: OutlineStyle,
 
     #[layout] layout: LayoutStyle,
     #[corners] corners: Corners<f32>,
+    #[border] border: BorderStyle,
     #[shadow] shadow: Shadow,
     #[flex] flex: FlexStyle,
 ) -> impl View<T> {
@@ -63,18 +64,19 @@ pub fn my_button<T>(
             color
         };
 
-        let border_color = if state.focused {
-            Color::BLUE
-        } else {
-            border.color
-        };
+        let mut outline = outline;
+
+        if state.focused {
+            outline.color = Color::BLUE;
+        }
 
         row(maybe(contents.take()))
             .background(color)
-            .border(border.width, border_color)
             .set_layout(layout)
             .set_padding(padding)
             .set_corners(corners)
+            .set_outline(outline)
+            .set_border(border)
             .set_shadow(shadow)
             .set_flex(flex)
     })

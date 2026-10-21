@@ -477,8 +477,9 @@ enum Style {
     Layout,
     Padding,
     Corners,
-    Shadow,
+    Outline,
     Border,
+    Shadow,
     Flex,
 }
 
@@ -487,8 +488,9 @@ impl Style {
         ("layout", Self::Layout),
         ("padding", Self::Padding),
         ("corners", Self::Corners),
-        ("shadow", Self::Shadow),
+        ("outline", Self::Outline),
         ("border", Self::Border),
+        ("shadow", Self::Shadow),
         ("flex", Self::Flex),
     ];
 
@@ -497,8 +499,9 @@ impl Style {
             Style::Layout => "StyleLayout",
             Style::Padding => "StylePadding",
             Style::Corners => "StyleCorners",
-            Style::Shadow => "StyleShadow",
+            Style::Outline => "StyleOutline",
             Style::Border => "StyleBorder",
+            Style::Shadow => "StyleShadow",
             Style::Flex => "StyleFlexContainer",
         }
     }
@@ -549,8 +552,9 @@ impl Style {
             Style::Layout => "get_layout_style_mut",
             Style::Padding => "get_padding_mut",
             Style::Corners => "get_corners_mut",
-            Style::Shadow => "get_shadow_mut",
+            Style::Outline => "get_outline_style_mut",
             Style::Border => "get_border_style_mut",
+            Style::Shadow => "get_shadow_mut",
             Style::Flex => "get_flex_style_mut",
         }
     }
@@ -564,8 +568,9 @@ impl Style {
             Style::Layout => parse_quote!(#ori_native::LayoutStyle),
             Style::Padding => parse_quote!(#ori_native::Sides<#ori_native::Length>),
             Style::Corners => parse_quote!(#ori_native::Corners<::std::primitive::f32>),
-            Style::Shadow => parse_quote!(#ori_native::Shadow),
+            Style::Outline => parse_quote!(#ori_native::OutlineStyle),
             Style::Border => parse_quote!(#ori_native::BorderStyle),
+            Style::Shadow => parse_quote!(#ori_native::Shadow),
             Style::Flex => parse_quote!(#ori_native::FlexStyle),
         }
     }
