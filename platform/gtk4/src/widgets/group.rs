@@ -298,6 +298,11 @@ mod imp {
                 let [to, ro, bo, lo] = self.outline_offset.get();
                 let [tw, rw, bw, lw] = self.outline_width.get();
 
+                let tl = tl + lw.min(tw);
+                let tr = tr + rw.min(tw);
+                let br = br + rw.min(bw);
+                let bl = bl + lw.min(bw);
+
                 let rect = gsk4::RoundedRect::new(
                     graphene::Rect::new(
                         0.0 - lo - lw,
