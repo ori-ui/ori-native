@@ -1,4 +1,4 @@
-use ori::{Effect, Message, Proxied};
+use ori::{Effect, Message, Proxied, Tracked};
 
 use crate::{
     Context, Platform, PressableEvent, Quit, TextInputEvent, views::animate::AnimateMessage,
@@ -35,16 +35,21 @@ pub fn message<P, T, V, B>(
     let mut action = V::message((), state, cx, data, &mut message);
 
     if let Some(target) = message.target()
-        && !message.is::<PressableEvent>()
-        && !message.is::<TextInputEvent>()
-        && !message.is::<AnimateMessage>()
         && !message.is_taken()
     {
-        tracing::warn!(
-            target=?target,
-            type=message.type_name(),
-            "message sent but not received"
-        );
+        if cx.tree().contains(target) {
+            tracing::warn!(
+                target=?target,
+                type=message.type_name(),
+                "message not received",
+            )
+        } else {
+            tracing::trace!(
+                target=?target,
+                type=message.type_name(),
+                "message not received",
+            );
+        }
     }
 
     if action.take_rebuild() {
