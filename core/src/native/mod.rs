@@ -3,6 +3,7 @@
 mod group;
 mod image;
 mod measure;
+mod painter;
 mod popup;
 mod pressable;
 mod scroll;
@@ -14,6 +15,7 @@ mod window;
 pub use group::NativeGroup;
 pub use image::NativeImage;
 pub use measure::NativeMeasure;
+pub use painter::NativePainter;
 pub use popup::NativePopup;
 pub use pressable::NativePressable;
 pub use scroll::NativeScroll;

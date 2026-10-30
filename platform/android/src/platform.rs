@@ -168,6 +168,7 @@ impl ori_native_core::Platform for Platform {
     type Measure = widgets::Measure;
     type Window = widgets::Window;
 
+    type Painter = Unsupported;
     type Popup = Unsupported;
 
     fn quit(&mut self) {}

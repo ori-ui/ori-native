@@ -102,6 +102,7 @@ impl ori_native_core::Platform for Platform {
     type TextInput = widgets::TextInput;
     type Transform = widgets::Transform;
     type Measure = widgets::Measure;
+    type Painter = widgets::Painter;
     type Popup = widgets::Popup;
     type Window = widgets::Window;
 

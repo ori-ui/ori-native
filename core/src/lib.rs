@@ -3,6 +3,7 @@
 
 //! Core implementation of `ori-native`.
 
+mod canvas;
 mod context;
 mod event;
 mod input;
@@ -24,6 +25,9 @@ pub mod native;
 pub mod views;
 pub mod widgets;
 
+pub use canvas::{
+    Blend, Canvas, Cap, Curve, CurveSegment, Fill, Gradient, Join, Paint, Primitive, Shader, Stroke,
+};
 pub use context::{BoxedEffect, Context};
 pub use event::{Button, MoveEvent, PressEvent, PressableEvent, ScrollEvent, TextInputEvent};
 pub use input::{Input, InputFilter, InputHandler, InputMessage, MatchKey};

@@ -1,8 +1,8 @@
 use ori::Proxied;
 
 use crate::native::{
-    NativeGroup, NativeImage, NativeMeasure, NativePopup, NativePressable, NativeScroll,
-    NativeText, NativeTextInput, NativeTransform, NativeWindow,
+    NativeGroup, NativeImage, NativeMeasure, NativePainter, NativePopup, NativePressable,
+    NativeScroll, NativeText, NativeTextInput, NativeTransform, NativeWindow,
 };
 
 /// A native platform, e.g. windows or gtk4.
@@ -33,6 +33,9 @@ pub trait Platform: Proxied + Sized + 'static {
 
     /// The native measure widget of this platform.
     type Measure: NativeMeasure<Self>;
+
+    /// The native painter widget of this platform.
+    type Painter: NativePainter<Self>;
 
     /// The native popup widget of this platform.
     type Popup: NativePopup<Self>;

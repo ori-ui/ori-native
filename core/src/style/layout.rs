@@ -219,6 +219,11 @@ pub struct Point<T> {
 }
 
 impl<T> Point<T> {
+    /// Create new [`Point`].
+    pub const fn new(x: T, y: T) -> Self {
+        Self { x, y }
+    }
+
     /// Create new [`Point`] with the same value for `x` and `y`.
     pub const fn all(value: T) -> Self
     where

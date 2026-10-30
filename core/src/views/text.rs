@@ -152,6 +152,7 @@ where
         _data: &mut T,
     ) {
         if state.layout != self.layout {
+            state.layout = self.layout;
             element.set_layout(cx, self.layout);
         }
 
